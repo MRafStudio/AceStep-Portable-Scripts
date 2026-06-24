@@ -2,7 +2,7 @@
 #   AceStep-Portable-Scripts — .gitignore
 # ============================================================
 
-# --- НЕ коммитим тяжёлые/генерируемые файлы ---
+# Не коммитим тяжёлые/генерируемые файлы
 models/
 python-*/
 repo/
@@ -17,20 +17,20 @@ logs/
 *.ckpt
 *.pth
 
-# --- Windows ---
+# Windows
 *.exe
 *.dll
 *.zip
 *.7z
 
-# --- Python ---
+# Python
 __pycache__/
 *.pyc
 *.pyo
 .venv/
 venv/
 
-# --- IDE ---
+# IDE
 .vs/
 .vscode/
 .idea/
@@ -38,6 +38,6 @@ venv/
 *.pyproj
 *.user
 
-# --- Пользовательские настройки (генерируются автоматом) ---
+# Config (пользовательские настройки)
 scripts/Config.ini
 .env
