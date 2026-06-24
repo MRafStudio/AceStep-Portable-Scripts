@@ -10,8 +10,10 @@ pushd %~dp0..
 
 for /f %%a in ('powershell -Command "Write-Host ([char]27) -NoNewline"') do set "ESC=%%a"
 
-set "ROOT_DIR=%~dp0.."
-set "ROOT_DIR=%ROOT_DIR:~0,-1%"
+REM ============================================================================
+REM   Определение ROOT_DIR (корень проекта = уровень выше scripts\)
+REM ============================================================================
+for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "REPO_DIR=%ROOT_DIR%\repo"
 set "GIT_DIR=%ROOT_DIR%\git"
 set "GIT_EXE=%GIT_DIR%\cmd\git.exe"
