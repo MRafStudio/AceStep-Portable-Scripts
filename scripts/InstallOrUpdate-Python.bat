@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 REM ============================================================================
-REM   Python 3.11.9 Portable — установка / обновление (общий для всех модулей)
+REM   Python 3.11.9 Portable — установка / обновление
 REM ============================================================================
 
 title Python Portable — Установка / Обновление
@@ -11,12 +11,57 @@ title Python Portable — Установка / Обновление
 set "AUTOCLOSE=0"
 if "%1"=="1" set "AUTOCLOSE=1"
 
-pushd %~dp0..
+REM ============================================================================
+REM   Определение путей (корень проекта = уровень выше scripts\)
+REM ============================================================================
+for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
+set "PYTHON_DIR=%ROOT_DIR%\python-3.11.9"
+set "PYTHON_EXE=%PYTHON_DIR%\python.exe"
 
-for /f %%a in ('powershell -Command "Write-Host ([char]27) -NoNewline"') do set "ESC=%%a"
+REM ============================================================================
+REM   ИЗОЛЯЦИЯ ДАННЫХ (принудительно, ничего в систему!)
+REM ============================================================================
+set "DATA_DIR=%ROOT_DIR%\data"
+set "TEMP=%DATA_DIR%\temp"
+set "TMP=%DATA_DIR%\temp"
+set "APPDATA=%DATA_DIR%\appdata"
+set "LOCALAPPDATA=%DATA_DIR%\localappdata"
+set "HOME=%DATA_DIR%\home"
+set "USERPROFILE=%DATA_DIR%\home"
+set "PIP_CACHE_DIR=%DATA_DIR%\pip-cache"
+set "PYTHONUSERBASE=%DATA_DIR%\python-user"
+
+REM Создаём папки заранее
+if not exist "%DATA_DIR%" mkdir "%DATA_DIR%" 2>nul
+if not exist "%TEMP%" mkdir "%TEMP%" 2>nul
+if not exist "%APPDATA%" mkdir "%APPDATA%" 2>nul
+if not exist "%LOCALAPPDATA%" mkdir "%LOCALAPPDATA%" 2>nul
+if not exist "%HOME%" mkdir "%HOME%" 2>nul
+if not exist "%PIP_CACHE_DIR%" mkdir "%PIP_CACHE_DIR%" 2>nul
+if not exist "%PYTHONUSERBASE%" mkdir "%PYTHONUSERBASE%" 2>nul
+
+REM ============================================================================
+REM   КРИТИЧЕСКИ ВАЖНО: Создаём временный скрипт для PowerShell с изоляцией
+REM   Чтобы PowerShell не создавал Microsoft\ в корне проекта
+REM ============================================================================
+set "PS_WRAPPER=%TEMP%\ps_wrapper.bat"
+(
+    echo @echo off
+    echo set "LOCALAPPDATA=%LOCALAPPDATA%"
+    echo set "APPDATA=%APPDATA%"
+    echo set "TEMP=%TEMP%"
+    echo set "TMP=%TMP%"
+    echo set "HOME=%HOME%"
+    echo set "USERPROFILE=%USERPROFILE%"
+    echo powershell -NoProfile -NonInteractive %%*
+) > "%PS_WRAPPER%"
+
+REM ============================================================================
+REM   Получение ESC через изолированный PowerShell (usebackq для кавычек)
+REM ============================================================================
+for /f "usebackq" %%a in (`%PS_WRAPPER% -Command "Write-Host ([char]27) -NoNewline"`) do set "ESC=%%a"
 
 cls
-::echo %AUTOCLOSE%
 echo.
 echo  %ESC%[1;36m################################################################################%ESC%[0m
 echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
@@ -34,15 +79,14 @@ if %ARCH_OK%==0 (
     echo.
     echo   %ESC%[1;31m^[ОШИБКА^] Обнаружена 32-разрядная ^(x86^) версия Windows.%ESC%[0m
     if "%AUTOCLOSE%"=="0" pause
-    popd
     exit /b 1
 )
 echo   %ESC%[1;32m  ✔   Система 64-разрядная (x64).%ESC%[0m
 echo.
 
-set "PYTHON_DIR=%~dp0..\python-3.11.9"
-set "PYTHON_EXE=%PYTHON_DIR%\python.exe"
-
+REM ============================================================================
+REM   Проверка установленного Python
+REM ============================================================================
 if exist "%PYTHON_EXE%" (
     echo   %ESC%[32m  ✔   Python уже установлен.%ESC%[0m
     set /p "=%ESC%[2m       Версия: %ESC%[0m" <nul
@@ -54,11 +98,13 @@ if exist "%PYTHON_EXE%" (
 echo   %ESC%[1;33m[1/3]%ESC%[0m %ESC%[1mЗагрузка Python 3.11.9...%ESC%[0m
 echo   %ESC%[2m       ~180 МБ, первая загрузка может занять время%ESC%[0m
 
+REM ============================================================================
+REM   Загрузка с изоляцией TEMP
+REM ============================================================================
 curl -# -L -o "%TEMP%\python-3.11.9-amd64.zip" "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.zip"
 if !errorlevel! neq 0 (
     echo   %ESC%[1;31m^[ОШИБКА^] Не удалось загрузить Python.%ESC%[0m
     if "%AUTOCLOSE%"=="0" pause
-    popd
     exit /b 1
 )
 
@@ -68,7 +114,66 @@ echo   %ESC%[1;33m[2/3]%ESC%[0m %ESC%[1mРаспаковка...%ESC%[0m
 
 if exist "%PYTHON_DIR%" rmdir /s /q "%PYTHON_DIR%"
 mkdir "%PYTHON_DIR%"
-powershell -Command "& { Expand-Archive -Path '%TEMP%\python-3.11.9-amd64.zip' -DestinationPath '%PYTHON_DIR%' -Force }"
+
+REM ============================================================================
+REM   Распаковка: сначала 7-Zip, потом PowerShell (fallback)
+REM ============================================================================
+echo   %ESC%[2m       Попытка распаковки через 7-Zip...%ESC%[0m
+
+set "SEVENZIP="
+
+REM Ищем 7z.exe в PATH
+where 7z >nul 2>nul
+if !errorlevel! equ 0 (
+    for /f "tokens=*" %%a in ('where 7z 2^>nul') do set "SEVENZIP=%%a"
+)
+
+REM Ищем в стандартных путях
+if not defined SEVENZIP (
+    if exist "C:\Program Files\7-Zip\7z.exe" set "SEVENZIP=C:\Program Files\7-Zip\7z.exe"
+)
+if not defined SEVENZIP (
+    if exist "C:\Program Files (x86)\7-Zip\7z.exe" set "SEVENZIP=C:\Program Files (x86)\7-Zip\7z.exe"
+)
+
+if defined SEVENZIP (
+    echo   %ESC%[2m       Найден 7-Zip: %SEVENZIP%%ESC%[0m
+    
+    REM Распаковка через 7-Zip (быстро и надёжно)
+    "%SEVENZIP%" x "%TEMP%\python-3.11.9-amd64.zip" -o"%PYTHON_DIR%" -y >nul 2>&1
+    
+    if !errorlevel! equ 0 (
+        echo   %ESC%[32m  ✔   Распаковка через 7-Zip завершена.%ESC%[0m
+    ) else (
+        echo   %ESC%[1;33m  ⚠   7-Zip не справился. Переключение на PowerShell...%ESC%[0m
+        goto ps_unpack
+    )
+) else (
+    echo   %ESC%[2m       7-Zip не найден. Используем PowerShell...%ESC%[0m
+    goto ps_unpack
+)
+
+goto unpack_done
+
+:ps_unpack
+REM ============================================================================
+REM   Fallback: PowerShell с изоляцией (через wrapper)
+REM ============================================================================
+%PS_WRAPPER% -Command "Expand-Archive -Path '%TEMP%\python-3.11.9-amd64.zip' -DestinationPath '%PYTHON_DIR%' -Force"
+
+if !errorlevel! neq 0 (
+    echo   %ESC%[1;31m[ОШИБКА] Не удалось распаковать архив!%ESC%[0m
+    rmdir /s /q "%PYTHON_DIR%" 2>nul
+    del "%TEMP%\python-3.11.9-amd64.zip" 2>nul
+    del "%PS_WRAPPER%" 2>nul
+    if "%AUTOCLOSE%"=="0" pause
+    exit /b 1
+)
+
+echo   %ESC%[32m  ✔   Распаковка через PowerShell завершена.%ESC%[0m
+
+:unpack_done
+
 del "%TEMP%\python-3.11.9-amd64.zip" 2>nul
 
 echo   %ESC%[32m  ✔   Python успешно установлен в python-3.11.9\%ESC%[0m
@@ -78,7 +183,7 @@ echo.
 
 :check_hf
 REM ============================================================================
-REM   Установка / обновление huggingface-hub (для hf.exe)
+REM   Установка / обновление huggingface-hub (с полной изоляцией)
 REM ============================================================================
 echo   %ESC%[1;33m[3/3]%ESC%[0m %ESC%[1mПроверка hf.exe...%ESC%[0m
 
@@ -88,7 +193,21 @@ set "PATH=%PYTHON_DIR%;%PYTHON_DIR%\Scripts;%PATH%"
 where hf >nul 2>nul
 if !errorlevel! neq 0 (
     echo   %ESC%[33m  →   Установка huggingface-hub...%ESC%[0m
-    "%PYTHON_EXE%" -m pip install huggingface-hub --quiet --no-warn-script-location
+    
+    REM ============================================================================
+    REM   ПРИНУДИТЕЛЬНАЯ изоляция для pip (перед каждой командой pip!)
+    REM ============================================================================
+    set "TEMP=%DATA_DIR%\temp"
+    set "TMP=%DATA_DIR%\temp"
+    set "APPDATA=%DATA_DIR%\appdata"
+    set "LOCALAPPDATA=%DATA_DIR%\localappdata"
+    set "HOME=%DATA_DIR%\home"
+    set "USERPROFILE=%DATA_DIR%\home"
+    set "PIP_CACHE_DIR=%DATA_DIR%\pip-cache"
+    set "PYTHONUSERBASE=%DATA_DIR%\python-user"
+    
+    "%PYTHON_EXE%" -m pip install huggingface-hub --quiet --no-warn-script-location --cache-dir "%PIP_CACHE_DIR%" --user
+    
     if !errorlevel! neq 0 (
         echo   %ESC%[1;31m^[ОШИБКА^] Не удалось установить huggingface-hub.%ESC%[0m
         echo   %ESC%[33m       Загрузка моделей будет недоступна.%ESC%[0m
@@ -97,8 +216,21 @@ if !errorlevel! neq 0 (
     )
 ) else (
     echo   %ESC%[33m  →   Обновление huggingface-hub...%ESC%[0m
-    REM === ИСПРАВЛЕНИЕ: Всегда обновляем hf.exe до последней версии ===
-    "%PYTHON_EXE%" -m pip install --upgrade huggingface-hub --quiet --no-warn-script-location
+    
+    REM ============================================================================
+    REM   ИСПРАВЛЕНИЕ: Всегда обновляем hf.exe до последней версии (с изоляцией)
+    REM ============================================================================
+    set "TEMP=%DATA_DIR%\temp"
+    set "TMP=%DATA_DIR%\temp"
+    set "APPDATA=%DATA_DIR%\appdata"
+    set "LOCALAPPDATA=%DATA_DIR%\localappdata"
+    set "HOME=%DATA_DIR%\home"
+    set "USERPROFILE=%DATA_DIR%\home"
+    set "PIP_CACHE_DIR=%DATA_DIR%\pip-cache"
+    set "PYTHONUSERBASE=%DATA_DIR%\python-user"
+    
+    "%PYTHON_EXE%" -m pip install --upgrade huggingface-hub --quiet --no-warn-script-location --cache-dir "%PIP_CACHE_DIR%" --user
+    
     if !errorlevel! neq 0 (
         echo   %ESC%[1;33m  ⚠   Не удалось обновить huggingface-hub. Используется текущая версия.%ESC%[0m
     ) else (
@@ -106,14 +238,19 @@ if !errorlevel! neq 0 (
     )
 )
 
+REM ============================================================================
+REM   Удаляем временный wrapper
+REM ============================================================================
+del "%PS_WRAPPER%" 2>nul
+
 echo.
 echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
 echo   %ESC%[1;32mPython 3.11.9 успешно установлен!%ESC%[0m
 echo   %ESC%[2m  Путь: %PYTHON_DIR%%ESC%[0m
+echo   %ESC%[2m  Изоляция: %DATA_DIR%%ESC%[0m
 echo   %ESC%[2m  hf.exe: готов к загрузке моделей%ESC%[0m
 echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
 echo.
 
 if "%AUTOCLOSE%"=="0" pause
-popd
 exit /b 0

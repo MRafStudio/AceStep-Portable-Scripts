@@ -119,8 +119,16 @@ if !errorlevel! equ 0 (
 
 REM Репозиторий
 set "REPO_INSTALLED=0"
+set "REPO_BRANCH="
 if exist "%REPO_DIR%\.git" (
-    echo     %ESC%[1;32m✔  %ESC%[0m Репозиторий ACE-Step-1.5
+    cd /d "%REPO_DIR%" 2>nul
+    for /f "tokens=*" %%a in ('git branch --show-current 2^>nul') do set "REPO_BRANCH=%%a"
+    cd /d "%ROOT_DIR%" 2>nul
+    if "!REPO_BRANCH!"=="ru-localization" (
+        echo     %ESC%[1;32m✔  %ESC%[0m Репозиторий ACE-Step-1.5 %ESC%[2m^(ru-localization^)%ESC%[0m
+    ) else (
+        echo     %ESC%[1;33m⚠  %ESC%[0m Репозиторий ACE-Step-1.5 %ESC%[2m^(!REPO_BRANCH!, ожидается ru-localization^)%ESC%[0m
+    )
     set "REPO_INSTALLED=1"
 ) else (
     echo     %ESC%[1;31m✗  %ESC%[0m Репозиторий — не клонирован
@@ -161,6 +169,7 @@ echo.
 
 echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mУстановка / Обновление компонентов%ESC%[0m
 echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1mНастройки%ESC%[0m %ESC%[2m(модель, автозапуск, метод)%ESC%[0m
+echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mИнструменты разработчика%ESC%[0m %ESC%[2m(Git, локализация, обновление)%ESC%[0m
 echo.
 
 if "!INSTALLED_COUNT!"=="5" (
@@ -174,7 +183,7 @@ echo.
 echo   %ESC%[1;37m[0]%ESC%[0m %ESC%[1mВыход%ESC%[0m
 echo.
 set "choice="
-set /p "choice=%ESC%[33mВыберите действие (0-2, Enter для запуска): %ESC%[0m"
+set /p "choice=%ESC%[33mВыберите действие (0-3, Enter для запуска): %ESC%[0m"
 
 if not defined choice goto run
 set "choice=%choice: =%"
@@ -182,6 +191,7 @@ if "%choice%"=="" goto run
 if "%choice%"=="*" goto run
 if "%choice%"=="1" goto setup
 if "%choice%"=="2" goto settings
+if "%choice%"=="3" goto dev_tools
 if "%choice%"=="0" goto exit
 goto menu
 
@@ -215,6 +225,83 @@ goto menu
 :settings
 call "%SCRIPTS_DIR%\Settings.bat"
 goto menu
+
+:dev_tools
+cls
+echo.
+echo  %ESC%[1;36m################################################################################%ESC%[0m
+echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
+echo  %ESC%[1;36m##%ESC%[0m                %ESC%[1;37mAceStep-1.5 Portable%ESC%[0m   —   %ESC%[1;33mИнструменты разработчика%ESC%[0m       %ESC%[1;36m##%ESC%[0m
+echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
+echo  %ESC%[1;36m################################################################################%ESC%[0m
+echo.
+
+REM Проверка репозитория
+set "REPO_EXISTS=0"
+set "REPO_BRANCH="
+if exist "%REPO_DIR%\.git" (
+    cd /d "%REPO_DIR%" 2>nul
+    for /f "tokens=*" %%a in ('git branch --show-current 2^>nul') do set "REPO_BRANCH=%%a"
+    cd /d "%ROOT_DIR%" 2>nul
+    if "!REPO_BRANCH!"=="ru-localization" (
+        echo   %ESC%[1;32m✔  %ESC%[0m Репозиторий: %ESC%[1;33mru-localization%ESC%[0m
+    ) else (
+        echo   %ESC%[1;33m⚠  %ESC%[0m Репозиторий: %ESC%[1;33m!REPO_BRANCH!%ESC%[0m %ESC%[2m^(ожидается ru-localization^)%ESC%[0m
+    )
+    set "REPO_EXISTS=1"
+) else (
+    echo   %ESC%[1;31m✗  %ESC%[0m Репозиторий — не клонирован
+)
+
+echo.
+echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mОбновить репозиторий%ESC%[0m %ESC%[2m(InstallOrUpdate-Repo.bat)%ESC%[0m
+echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1mОбновить ru-localization из origin/main%ESC%[0m %ESC%[2m(свежие обновления upstream)%ESC%[0m
+echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mОтправить локализацию в GitHub%ESC%[0m %ESC%[2m(commit + push ru-localization)%ESC%[0m
+echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mОбновить скрипты из GitHub%ESC%[0m %ESC%[2m(git pull AceStep-Portable-Scripts)%ESC%[0m
+echo.
+echo   %ESC%[1;37m[0]%ESC%[0m %ESC%[1mНазад в главное меню%ESC%[0m
+echo.
+set "choice="
+set /p "choice=%ESC%[33mВыберите действие (0-4): %ESC%[0m"
+
+set "choice=%choice: =%"
+if "%choice%"=="" goto dev_tools
+if "%choice%"=="0" goto menu
+if "%choice%"=="1" goto update_repo
+if "%choice%"=="2" goto update_localization
+if "%choice%"=="3" goto push_localization
+if "%choice%"=="4" goto update_scripts
+goto dev_tools
+
+:update_repo
+call "%SCRIPTS_DIR%\InstallOrUpdate-Repo.bat"
+goto dev_tools
+
+:update_localization
+call "%SCRIPTS_DIR%\Update-From-Upstream.bat"
+goto dev_tools
+
+:push_localization
+call "%SCRIPTS_DIR%\Push-Localization.bat"
+goto dev_tools
+
+:update_scripts
+cls
+echo.
+echo   %ESC%[1;33m→%ESC%[0m %ESC%[1mОбновление скриптов из GitHub...%ESC%[0m
+echo.
+cd /d "%ROOT_DIR%"
+git pull origin main
+if !errorlevel! equ 0 (
+    echo   %ESC%[1;32m  ✔   Скрипты обновлены!%ESC%[0m
+) else (
+    echo   %ESC%[1;31m[ОШИБКА] Не удалось обновить скрипты.%ESC%[0m
+    echo   %ESC%[33m       Возможно, есть локальные изменения.%ESC%[0m
+    echo   %ESC%[33m       Сохраните изменения и повторите.%ESC%[0m
+)
+echo.
+pause
+goto dev_tools
 
 :exit
 popd
