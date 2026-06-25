@@ -11,6 +11,7 @@ Portable Windows scripts and Russian localization for [ACE-Step-1.5](https://git
 
 ## 📁 Структура
 
+```text
 D:\AceStep-1.5
 ├── Start.bat              # Главное меню
 ├── scripts\               # Скрипты установки и запуска
