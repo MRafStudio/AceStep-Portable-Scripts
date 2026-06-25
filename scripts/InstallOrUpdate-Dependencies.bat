@@ -6,14 +6,11 @@ setlocal enabledelayedexpansion
 set "AUTOCLOSE=0"
 if "%1"=="1" set "AUTOCLOSE=1"
 
-title AceStep-1.5 — Установка PyTorch + зависимостей
+title AceStep-1.5 — Установка зависимостей
 pushd %~dp0..
 
 for /f %%a in ('powershell -Command "Write-Host ([char]27) -NoNewline"') do set "ESC=%%a"
 
-REM ============================================================================
-REM   Определение ROOT_DIR (корень проекта = уровень выше scripts\)
-REM ============================================================================
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "REPO_DIR=%ROOT_DIR%\repo"
@@ -38,11 +35,9 @@ if not exist "%HOME%" mkdir "%HOME%" 2>nul
 
 cls
 echo.
-echo  %ESC%[1;36m################################################################################%ESC%[0m
-echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
-echo  %ESC%[1;36m##%ESC%[0m          %ESC%[1;37mAceStep-1.5%ESC%[0m   —   %ESC%[1;33mУстановка PyTorch + зависимостей%ESC%[0m           %ESC%[1;36m##%ESC%[0m
-echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
-echo  %ESC%[1;36m################################################################################%ESC%[0m
+echo  %ESC%[1;36m╔══════════════════════════════════════════════════════════════════════════════╗%ESC%[0m
+echo  %ESC%[1;36m║%ESC%[0m          %ESC%[1;37mAceStep-1.5%ESC%[0m  —  %ESC%[1;33mУстановка PyTorch + зависимостей%ESC%[0m           %ESC%[1;36m║%ESC%[0m
+echo  %ESC%[1;36m╚══════════════════════════════════════════════════════════════════════════════╝%ESC%[0m
 echo.
 
 REM ============================================================================
@@ -66,99 +61,51 @@ if not exist "%REPO_DIR%\requirements.txt" (
 )
 
 REM ============================================================================
-REM   Создание venv
+REM   Автоопределение GPU
 REM ============================================================================
-echo   %ESC%[1;33m[1/4]%ESC%[0m %ESC%[1mСоздание виртуального окружения...%ESC%[0m
+echo   %ESC%[1;33m→ Определение видеокарты...%ESC%[0m
 
-cd /d "%REPO_DIR%"
+set "GPU_TYPE=UNKNOWN"
+set "GPU_NAME=Не определена"
 
-if not exist ".venv" (
-    "%PYTHON_EXE%" -m venv .venv
-    if !errorlevel! neq 0 (
-        echo   %ESC%[1;31m[ОШИБКА] Не удалось создать venv.%ESC%[0m
-        if "%AUTOCLOSE%"=="0" pause
-        popd
-        exit /b 1
-    )
-    echo   %ESC%[1;32m  ✔   Виртуальное окружение создано.%ESC%[0m
-) else (
-    echo   %ESC%[1;32m  ✔   Виртуальное окружение уже существует.%ESC%[0m
-)
-
-set "VENV_PYTHON=%REPO_DIR%\.venv\Scripts\python.exe"
-set "VENV_PIP=%REPO_DIR%\.venv\Scripts\pip.exe"
-
-REM ============================================================================
-REM   Обновление pip
-REM ============================================================================
-echo.
-echo   %ESC%[1;33m[2/4]%ESC%[0m %ESC%[1mОбновление pip...%ESC%[0m
-
-"%VENV_PYTHON%" -m pip install --upgrade pip --quiet
-if !errorlevel! neq 0 (
-    echo   %ESC%[1;33m  ⚠   Не удалось обновить pip. Продолжаем...%ESC%[0m
-) else (
-    echo   %ESC%[1;32m  ✔   pip обновлён.%ESC%[0m
-)
-
-REM ============================================================================
-REM   Установка PyTorch CUDA 12.8 для RTX 5090 (Blackwell)
-REM ============================================================================
-echo.
-echo   %ESC%[1;33m[3/4]%ESC%[0m %ESC%[1mУстановка PyTorch CUDA 12.8...%ESC%[0m
-echo   %ESC%[2m       Для RTX 5090 (Blackwell) требуется CUDA 12.8%ESC%[0m
-
-"%VENV_PIP%" install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128 --quiet
-if !errorlevel! neq 0 (
-    echo   %ESC%[1;31m[ОШИБКА] Не удалось установить PyTorch CUDA 12.8.%ESC%[0m
-    echo   %ESC%[33m       Попытка установить CPU версию...%ESC%[0m
-    
-    "%VENV_PIP%" install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu --quiet
-    if !errorlevel! neq 0 (
-        echo   %ESC%[1;31m[ОШИБКА] PyTorch не установился.%ESC%[0m
-        if "%AUTOCLOSE%"=="0" pause
-        popd
-        exit /b 1
-    )
-    echo   %ESC%[1;33m  ⚠   Установлена CPU версия PyTorch.%ESC%[0m
-    echo   %ESC%[33m       GPU не будет использоваться!%ESC%[0m
-) else (
-    echo   %ESC%[1;32m  ✔   PyTorch CUDA 12.8 установлен.%ESC%[0m
-)
-
-REM ============================================================================
-REM   Установка зависимостей из requirements.txt
-REM ============================================================================
-echo.
-echo   %ESC%[1;33m[4/4]%ESC%[0m %ESC%[1mУстановка зависимостей ACE-Step-1.5...%ESC%[0m
-
-"%VENV_PIP%" install -r "%REPO_DIR%\requirements.txt" --quiet
-if !errorlevel! neq 0 (
-    echo   %ESC%[1;33m  ⚠   Некоторые зависимости не установились.%ESC%[0m
-    echo   %ESC%[33m       Возможно, потребуется ручная установка.%ESC%[0m
-) else (
-    echo   %ESC%[1;32m  ✔   Зависимости установлены.%ESC%[0m
-)
-
-REM ============================================================================
-REM   Проверка установки
-REM ============================================================================
-echo.
-echo   %ESC%[1;33mПроверка установки...%ESC%[0m
-
-"%VENV_PYTHON%" -c "import torch; print(f'PyTorch: {torch.__version__}'); print(f'CUDA: {torch.version.cuda}'); print(f'GPU: {torch.cuda.is_available()}')" 2>nul
+REM NVIDIA через nvidia-smi
+nvidia-smi >nul 2>nul
 if !errorlevel! equ 0 (
-    echo   %ESC%[1;32m  ✔   PyTorch работает!%ESC%[0m
-) else (
-    echo   %ESC%[1;33m  ⚠   Не удалось проверить PyTorch.%ESC%[0m
+    for /f "tokens=*" %%a in ('nvidia-smi --query-gpu=name --format=csv,noheader 2^>nul') do set "GPU_NAME=%%a"
+    set "GPU_TYPE=NVIDIA"
+    echo   %ESC%[1;32m  +   NVIDIA: !GPU_NAME!%ESC%[0m
+    goto gpu_detected
 )
 
-echo.
-echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
-echo   %ESC%[1;32mУстановка зависимостей завершена!%ESC%[0m
-echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
+REM AMD через wmic
+for /f "tokens=*" %%a in ('wmic path win32_VideoController get Name /value 2^>nul ^| findstr /I "AMD Radeon"') do (
+    set "GPU_NAME=%%a"
+    set "GPU_NAME=!GPU_NAME:~5!"
+    set "GPU_TYPE=AMD"
+)
+if "!GPU_TYPE!"=="AMD" (
+    echo   %ESC%[1;32m  +   AMD: !GPU_NAME!%ESC%[0m
+    goto gpu_detected
+)
+
+echo   %ESC%[1;31m  -   Видеокарта не определена!%ESC%[0m
+echo   %ESC%[1;31m[ОШИБКА] Требуется NVIDIA или AMD GPU.%ESC%[0m
+if "%AUTOCLOSE%"=="0" pause
+popd
+exit /b 1
+
+:gpu_detected
 echo.
 
-if "%AUTOCLOSE%"=="0" pause
+REM ============================================================================
+REM   Разветвление по GPU
+REM ============================================================================
+if "!GPU_TYPE!"=="NVIDIA" (
+    call "%SCRIPTS_DIR%\InstallOrUpdate-Deps-NVIDIA.bat" %AUTOCLOSE%
+) else if "!GPU_TYPE!"=="AMD" (
+    call "%SCRIPTS_DIR%\InstallOrUpdate-Deps-AMD.bat" %AUTOCLOSE%
+)
+
+:exit
 popd
 exit /b 0
