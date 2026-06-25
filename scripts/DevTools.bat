@@ -61,15 +61,15 @@ set "HAS_EMAIL=!errorlevel!"
 
 if !HAS_NAME! neq 0 (
     echo.
-    echo   %ESC%[1;33m⚠ Git identity не настроена.%ESC%[0m
+    echo   %ESC%[1;33m⚠  Git identity не настроена.%ESC%[0m
     echo   %ESC%[2m   Требуется для коммитов в репозиторий скриптов.%ESC%[0m
     echo.
     set "GIT_NAME="
-    set /p "GIT_NAME=%ESC%[33mВведите имя ^(например, MRafStudio^): %ESC%[0m"
+    set /p "GIT_NAME=%ESC%[33mВведите имя (например, MRafStudio): %ESC%[0m"
     if "!GIT_NAME!"=="" set "GIT_NAME=MRafStudio"
     
     set "GIT_EMAIL="
-    set /p "GIT_EMAIL=%ESC%[33mВведите email ^(например, raf@example.com^): %ESC%[0m"
+    set /p "GIT_EMAIL=%ESC%[33mВведите email (например, raf@example.com): %ESC%[0m"
     if "!GIT_EMAIL!"=="" set "GIT_EMAIL=raf@rafstudio.local"
     
     git config --local user.name "!GIT_NAME!"
@@ -83,7 +83,7 @@ if !HAS_EMAIL! neq 0 (
     REM Если name был, но email нет — отдельно обрабатываем
     if !HAS_NAME! equ 0 (
         echo.
-        echo   %ESC%[1;33m⚠ Git email не настроен.%ESC%[0m
+        echo   %ESC%[1;33m⚠  Git email не настроен.%ESC%[0m
         set "GIT_EMAIL="
         set /p "GIT_EMAIL=%ESC%[33mВведите email: %ESC%[0m"
         if "!GIT_EMAIL!"=="" set "GIT_EMAIL=raf@rafstudio.local"
@@ -171,7 +171,7 @@ echo.
 echo  %ESC%[1;33m→ Обновление репозитория ACE-Step-1.5%ESC%[0m
 echo.
 echo   %ESC%[2mВыполнит: git fetch origin + merge origin/main → ru-localization%ESC%[0m
-echo   %ESC%[1;33m⚠ Риск: конфликты слияния → ручное разрешение в VS 2022%ESC%[0m
+echo   %ESC%[1;33m⚠  Риск: конфликты слияния → ручное разрешение в VS/VS Code%ESC%[0m
 echo.
 set "CONFIRM="
 set /p "CONFIRM=%ESC%[33mПродолжить? (y/n): %ESC%[0m"
@@ -187,7 +187,7 @@ echo.
 echo  %ESC%[1;33m→ Обновление скриптов из GitHub%ESC%[0m
 echo.
 echo   %ESC%[2mВыполнит: git pull origin main%ESC%[0m
-echo   %ESC%[1;31m⚠ Локальные изменения скриптов будут ПЕРЕЗАПИСАНЫ!%ESC%[0m
+echo   %ESC%[1;31m⚠  Локальные изменения скриптов будут ПЕРЕЗАПИСАНЫ!%ESC%[0m
 echo   %ESC%[2mСовет: сначала сохраните изменения (пункт 4)%ESC%[0m
 echo.
 set "CONFIRM="
@@ -219,7 +219,7 @@ echo.
 echo  %ESC%[1;33m→ Отправка локализации в GitHub%ESC%[0m
 echo.
 echo   %ESC%[2mЦель: MRafStudio/ACE-Step-1.5, ветка ru-localization%ESC%[0m
-echo   %ESC%[1;33m⚠ Риск: сломанный код попадёт в репозиторий%ESC%[0m
+echo   %ESC%[1;33m⚠  Риск: сломанный код попадёт в репозиторий%ESC%[0m
 echo   %ESC%[2mПри первом запуске: логин + Personal Access Token (не пароль!)%ESC%[0m
 echo.
 set "CONFIRM="
@@ -236,7 +236,7 @@ echo.
 echo  %ESC%[1;33m→ Отправка скриптов в GitHub%ESC%[0m
 echo.
 echo   %ESC%[2mЦель: MRafStudio/AceStep-Portable-Scripts, ветка main%ESC%[0m
-echo   %ESC%[1;31m⚠ ВНИМАНИЕ: Сломанный скрипт сломает установку у ВСЕХ пользователей!%ESC%[0m
+echo   %ESC%[1;31m⚠  ВНИМАНИЕ: Сломанный скрипт сломает установку у ВСЕХ пользователей!%ESC%[0m
 echo   %ESC%[2mПри первом запуске: логин + Personal Access Token (не пароль!)%ESC%[0m
 echo.
 set "CONFIRM="
@@ -335,10 +335,10 @@ REM ============================================================================
 cls
 echo.
 echo  %ESC%[1;31m╔══════════════════════════════════════════════════════════════════════════════╗%ESC%[0m
-echo  %ESC%[1;31m║%ESC%[0m              %ESC%[1;37m⚠ КРИТИЧЕСКАЯ ОПЕРАЦИЯ ⚠%ESC%[0m                              %ESC%[1;31m║%ESC%[0m
+echo  %ESC%[1;31m║%ESC%[0m              %ESC%[1;37m⚠  КРИТИЧЕСКАЯ ОПЕРАЦИЯ ⚠%ESC%[0m                              %ESC%[1;31m║%ESC%[0m
 echo  %ESC%[1;31m╚══════════════════════════════════════════════════════════════════════════════╝%ESC%[0m
 echo.
-echo   %ESC%[1;31m⚠ ВСЕ ЛОКАЛЬНЫЕ ИЗМЕНЕНИЯ в repo\ БУДУТ УНИЧТОЖЕНЫ!%ESC%[0m
+echo   %ESC%[1;31m⚠  ВСЕ ЛОКАЛЬНЫЕ ИЗМЕНЕНИЯ в repo\ БУДУТ УНИЧТОЖЕНЫ!%ESC%[0m
 echo   %ESC%[2mНе затронуты: models\, output\, настройки.%ESC%[0m
 echo.
 echo   %ESC%[1;31mДля подтверждения введите: DESTROY%ESC%[0m

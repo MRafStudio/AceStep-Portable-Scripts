@@ -53,7 +53,7 @@ if !errorlevel! neq 0 (
 
 if not exist "%REPO_DIR%\.git" (
     echo   %ESC%[1;31m[ОШИБКА] Репозиторий не клонирован.%ESC%[0m
-    echo   %ESC%[33m       Запустите InstallOrUpdate-Repo.bat%ESC%[0m
+    echo   %ESC%[33m       Выполните клонирование репозитория ACE-Step-1.5 в меню установки/обновления%ESC%[0m
     pause
     del "%PS_WRAPPER%" 2>nul
     popd
