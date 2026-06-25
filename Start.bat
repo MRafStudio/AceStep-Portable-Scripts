@@ -323,7 +323,7 @@ if "!SCRIPTS_CHANGES!"=="1" (
 )
 
 echo.
-echo   %ESC%[1;37m── Обновление локальных репозиториев ────────────────────────────────%ESC%[0m
+echo   %ESC%[1;34m── Обновление локальных репозиториев ────────────────────────────────%ESC%[0m
 echo.
 echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mОбновить локальный репозиторий ACE-Step-1.5%ESC%[0m
 echo       %ESC%[2m(git fetch origin + merge origin/main → ru-localization)%ESC%[0m
@@ -334,7 +334,7 @@ echo       %ESC%[2m(git pull из GitHub)%ESC%[0m
 echo       %ESC%[1;33m⚠ Риск: локальные изменения скриптов будут ПЕРЕЗАПИСАНЫ%ESC%[0m
 
 echo.
-echo   %ESC%[1;37m── Отправка изменений на GitHub ───────────────────────────────────%ESC%[0m
+echo   %ESC%[1;34m── Отправка изменений на GitHub ───────────────────────────────────%ESC%[0m
 echo.
 echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mОтправить локализацию в GitHub%ESC%[0m
 echo       %ESC%[2m(git commit + push ru-localization → MRafStudio/ACE-Step-1.5)%ESC%[0m
@@ -347,13 +347,13 @@ echo       %ESC%[1;33m⚠ Риск: сломанный скрипт сломае
 echo       %ESC%[2m⚠ Требует Personal Access Token при первом запуске%ESC%[0m
 
 echo.
-echo   %ESC%[1;37m── Проверка статуса ─────────────────────────────────────────────%ESC%[0m
+echo   %ESC%[1;34m── Проверка статуса ─────────────────────────────────────────────%ESC%[0m
 echo.
 echo   %ESC%[1;37m[5]%ESC%[0m %ESC%[1mПроверить статус репозиториев%ESC%[0m
 echo       %ESC%[2m(git status для ACE-Step-1.5 и AceStep-Portable-Scripts)%ESC%[0m
 
 echo.
-echo   %ESC%[1;37m── Системные операции ─────────────────────────────────────────────%ESC%[0m
+echo   %ESC%[1;34m── Системные операции ─────────────────────────────────────────────%ESC%[0m
 echo.
 echo   %ESC%[1;37m[6]%ESC%[0m %ESC%[1mУдалить и переклонировать репозиторий ACE-Step-1.5%ESC%[0m
 echo       %ESC%[1;31m⚠ ВНИМАНИЕ: Все локальные изменения в repo\ будут УНИЧТОЖЕНЫ%ESC%[0m
