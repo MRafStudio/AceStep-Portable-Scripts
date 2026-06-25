@@ -20,6 +20,7 @@ D:\AceStep-1.5
 ├── models\                # Модели (base, xl-base, xl-sft, xl-turbo)
 ├── data\                  # Изоляция AppData, TEMP, HOME
 └── output\                # Сгенерированные треки
+```
 
 
 ## 🎵 Модели
