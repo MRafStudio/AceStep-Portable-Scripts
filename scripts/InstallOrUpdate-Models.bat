@@ -57,33 +57,86 @@ if !errorlevel! neq 0 (
 :menu
 cls
 echo.
-echo  %ESC%[1;36m################################################################################%ESC%[0m
-echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
-echo  %ESC%[1;36m##%ESC%[0m          %ESC%[1;37mAceStep-1.5%ESC%[0m   —   %ESC%[1;33mУстановка / Обновление моделей%ESC%[0m             %ESC%[1;36m##%ESC%[0m
-echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
-echo  %ESC%[1;36m################################################################################%ESC%[0m
+echo  %ESC%[1;36m╔══════════════════════════════════════════════════════════════════════════════╗%ESC%[0m
+echo  %ESC%[1;36m║%ESC%[0m               %ESC%[1;37mAceStep-1.5%ESC%[0m   —   %ESC%[1;33mУстановка / Обновление моделей%ESC%[0m             %ESC%[1;36m║%ESC%[0m
+echo  %ESC%[1;36m╚══════════════════════════════════════════════════════════════════════════════╝%ESC%[0m
 echo.
 echo   %ESC%[1;33mДоступные модели:%ESC%[0m
 echo.
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mbase%ESC%[0m        %ESC%[2m~8GB  |  VRAM: 8GB+  |  Быстро  |  Хорошее качество%ESC%[0m
-echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1mxl-base%ESC%[0m     %ESC%[2m~20GB |  VRAM: 20GB+ |  Средне  |  Отличное качество%ESC%[0m
-echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mxl-sft%ESC%[0m      %ESC%[2m~20GB |  VRAM: 20GB+ |  Средне  |  Fine-tuned%ESC%[0m
-echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mxl-turbo%ESC%[0m    %ESC%[2m~20GB |  VRAM: 20GB+ |  Очень быстро |  Оптимизированная%ESC%[0m
+echo   %ESC%[1;34m── Стандарт (2B, ~5GB) ─────────────────────────────────────────%ESC%[0m
+echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mbase%ESC%[0m   %ESC%[2m~5GB  VRAM: 6GB+  Шаги: 50  Все задачи%ESC%[0m
+echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1msft%ESC%[0m    %ESC%[2m~5GB  VRAM: 6GB+  Шаги: 50  Стандарт%ESC%[0m
+echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mturbo%ESC%[0m  %ESC%[2m~5GB  VRAM: 6GB+  Шаги: 8   Быстрая%ESC%[0m
 echo.
-echo   %ESC%[1;33mТвоя видеокарта:%ESC%[0m %ESC%[1;32mRTX 5090 32GB%ESC%[0m %ESC%[33m— все модели доступны!%ESC%[0m
+echo   %ESC%[1;34m── XL (4B, ~19GB) ───────────────────────────────────────────%ESC%[0m
+echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mxl-base%ESC%[0m   %ESC%[2m~19GB  VRAM: 12GB+  Шаги: 50  Все задачи%ESC%[0m
+echo   %ESC%[1;37m[5]%ESC%[0m %ESC%[1mxl-sft%ESC%[0m    %ESC%[2m~19GB  VRAM: 12GB+  Шаги: 50  Стандарт%ESC%[0m
+echo   %ESC%[1;37m[6]%ESC%[0m %ESC%[1mxl-turbo%ESC%[0m  %ESC%[2m~19GB  VRAM: 12GB+  Шаги: 8   Быстрая%ESC%[0m
+echo.
+
+REM ============================================================================
+REM   Автоопределение GPU + рекомендация
+REM ============================================================================
+set "GPU_NAME=Не определена"
+set "GPU_VRAM=0"
+
+nvidia-smi -L >nul 2>nul
+if !errorlevel! equ 0 (
+    for /f "tokens=*" %%a in ('nvidia-smi -L 2^>nul') do (
+        set "RAW=%%a"
+        set "RAW=!RAW:GPU 0: =!"
+        for /f "delims=(" %%b in ("!RAW!") do set "GPU_NAME=%%b"
+        set "GPU_NAME=!GPU_NAME:~0,-1!"
+    )
+    REM Пробуем получить VRAM (если nvidia-smi поддерживает)
+    for /f "tokens=*" %%a in ('nvidia-smi --query-gpu=memory.total --format=csv,noheader 2^>nul') do (
+        set "GPU_VRAM_STR=%%a"
+        for /f "tokens=1" %%b in ("!GPU_VRAM_STR!") do set "GPU_VRAM=%%b"
+    )
+) else (
+    for /f "tokens=*" %%a in ('wmic path win32_VideoController get Name /value 2^>nul ^| findstr /I "Name="') do (
+        set "GPU_RAW=%%a"
+        set "GPU_NAME=!GPU_RAW:~5!"
+    )
+)
+
+echo   %ESC%[1;33mGPU:%ESC%[0m %ESC%[1;32m!GPU_NAME!%ESC%[0m
+if !GPU_VRAM! gtr 0 (
+    echo   %ESC%[2m       VRAM: !GPU_VRAM! MiB%ESC%[0m
+)
+
+echo.
+echo   %ESC%[1;33mРекомендация:%ESC%[0m
+
+if !GPU_VRAM! geq 24000 (
+    echo   %ESC%[1;32m  XL модели — максимальное качество!%ESC%[0m
+    echo   %ESC%[2m       xl-base или xl-sft для лучшего результата%ESC%[0m
+) else if !GPU_VRAM! geq 12000 (
+    echo   %ESC%[1;32m  XL turbo — оптимальный баланс скорости и качества%ESC%[0m
+) else if !GPU_VRAM! geq 6000 (
+    echo   %ESC%[1;32m  Стандартные модели (2B) — стабильно и быстро%ESC%[0m
+    echo   %ESC%[2m       turbo для максимальной скорости%ESC%[0m
+) else if !GPU_VRAM! gtr 0 (
+    echo   %ESC%[1;33m  Мало VRAM. Попробуйте turbo (2B) или CPU.%ESC%[0m
+) else (
+    echo   %ESC%[1;33m  Невозможно определить VRAM. Начните с turbo (2B).%ESC%[0m
+)
+
 echo.
 echo   %ESC%[1;37m[0]%ESC%[0m %ESC%[1mНазад%ESC%[0m
 echo.
 set "choice="
-set /p "choice=%ESC%[33mВыберите модель (1-4, 0 для выхода): %ESC%[0m"
+set /p "choice=%ESC%[33mВыберите модель (1-6, 0 для выхода): %ESC%[0m"
 
 set "choice=%choice: =%"
 if "%choice%"=="" goto menu
 if "%choice%"=="0" goto exit
 if "%choice%"=="1" set "MODEL=base" & goto download
-if "%choice%"=="2" set "MODEL=xl-base" & goto download
-if "%choice%"=="3" set "MODEL=xl-sft" & goto download
-if "%choice%"=="4" set "MODEL=xl-turbo" & goto download
+if "%choice%"=="2" set "MODEL=sft" & goto download
+if "%choice%"=="3" set "MODEL=turbo" & goto download
+if "%choice%"=="4" set "MODEL=xl-base" & goto download
+if "%choice%"=="5" set "MODEL=xl-sft" & goto download
+if "%choice%"=="6" set "MODEL=xl-turbo" & goto download
 goto menu
 
 :download
@@ -106,7 +159,10 @@ echo   %ESC%[2m       Модель: %MODEL%%ESC%[0m
 echo   %ESC%[2m       Путь: %MODEL_PATH%%ESC%[0m
 echo.
 
-huggingface-cli download %HF_REPO% --include "%MODEL%/*" --local-dir "%MODEL_PATH%" --local-dir-use-symlinks False
+REM Путь в репозитории: acestep-v15-MODEL/ (например: acestep-v15-base/, acestep-v15-xl-base/)
+set "HF_PATH=acestep-v15-%MODEL%"
+
+hf download %HF_REPO% --include "%HF_PATH%/*" --local-dir "%MODEL_PATH%" --local-dir-use-symlinks False
 
 if !errorlevel! neq 0 (
     echo.
@@ -119,20 +175,22 @@ if !errorlevel! neq 0 (
 )
 
 echo.
-echo   %ESC%[1;32m  ✔   Модель %MODEL% успешно скачана!%ESC%[0m
+echo   %ESC%[1;32m  +   Модель %MODEL% успешно скачана!%ESC%[0m
 
 REM ============================================================================
 REM   Обновление Config.ini
 REM ============================================================================
 if exist "%CONFIG_FILE%" (
     powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'CURRENT_MODEL=.*', 'CURRENT_MODEL=%MODEL%' | Set-Content '%CONFIG_FILE%'"
-    echo   %ESC%[1;32m  ✔   Config.ini обновлён: CURRENT_MODEL=%MODEL%%ESC%[0m
+    echo   %ESC%[1;32m  +   Config.ini обновлён: CURRENT_MODEL=%MODEL%%ESC%[0m
 )
 
 echo.
-echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
+echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
 echo   %ESC%[1;32mМодель %MODEL% готова к использованию!%ESC%[0m
-echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
+echo   %ESC%[2m       Путь: %MODEL_PATH%%ESC%[0m
+echo   %ESC%[2m       Запуск: Start.bat → Запуск AceStep-1.5%ESC%[0m
+echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
 echo.
 
 if "%AUTOCLOSE%"=="0" pause

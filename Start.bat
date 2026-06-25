@@ -98,8 +98,8 @@ if not exist "%CONFIG_FILE%" (
         echo PYTHON_VERSION=3.11.9
         echo.
         echo ; --- Модель ---
-        echo ; Доступные: base, xl-base, xl-sft, xl-turbo
-        echo CURRENT_MODEL=xl-base
+        echo ; Доступные: base, sft, turbo, xl-base, xl-sft, xl-turbo
+        echo CURRENT_MODEL=turbo
         echo.
         echo ; --- Запуск ---
         echo AUTO_OPEN_BROWSER=1

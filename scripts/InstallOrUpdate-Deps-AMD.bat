@@ -156,11 +156,8 @@ REM Парсим URL из requirements.txt
 set "FLASH_URL="
 for /f "tokens=*" %%a in ('findstr /I "flash-attn" "%REPO_DIR%\requirements.txt"') do (
     set "FLASH_RAW=%%a"
-    REM Убираем "flash-attn @ " из начала строки
     set "FLASH_URL=!FLASH_RAW:flash-attn @ =!"
-    REM Обрезаем по ; (PEP 508 markers типа ; sys_platform == 'win32')
     for /f "delims=;" %%b in ("!FLASH_URL!") do set "FLASH_URL=%%b"
-    REM Убираем пробелы в конце
     set "FLASH_URL=!FLASH_URL: =!"
     goto flash_url_found
 )
@@ -174,8 +171,17 @@ if "!FLASH_URL!"=="" (
 echo   %ESC%[2m       Загрузка через curl...%ESC%[0m
 set "USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
-REM Хардкод правильного имени файла
-set "FLASH_NAME=flash_attn-2.8.2+cu128torch2.7.1cxx11abiFALSEfullbackward-cp311-cp311-win_amd64.whl"
+REM Извлекаем имя файла из URL (через PowerShell — универсально)
+for /f "usebackq" %%n in (`powershell -NoProfile -Command "[System.IO.Path]::GetFileName('!FLASH_URL!')"`) do (
+    set "FLASH_NAME=%%n"
+)
+
+if "!FLASH_NAME!"=="" (
+    echo   %ESC%[1;31m  -   Не удалось определить имя файла из URL.%ESC%[0m
+    goto flash_done
+)
+
+echo   %ESC%[2m       Файл: !FLASH_NAME!%ESC%[0m
 
 curl -L -A "%USER_AGENT%" -o "!TEMP!\!FLASH_NAME!" "!FLASH_URL!" --connect-timeout 30 --max-time 600 --progress-bar
 if !errorlevel! neq 0 (
