@@ -63,7 +63,7 @@ cls
 echo.
 echo  %ESC%[1;36m################################################################################%ESC%[0m
 echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
-echo  %ESC%[1;36m##%ESC%[0m          %ESC%[1;37mAceStep-1.5%ESC%[0m   —   %ESC%[1;33mОбновление ru-localization%ESC%[0m              %ESC%[1;36m##%ESC%[0m
+echo  %ESC%[1;36m##%ESC%[0m                %ESC%[1;37mAceStep-1.5%ESC%[0m   —   %ESC%[1;33mОбновление ru-localization%ESC%[0m                %ESC%[1;36m##%ESC%[0m
 echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
 echo  %ESC%[1;36m################################################################################%ESC%[0m
 echo.
