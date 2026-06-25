@@ -155,9 +155,13 @@ if !errorlevel! equ 0 (
 REM Парсим URL из requirements.txt
 set "FLASH_URL="
 for /f "tokens=*" %%a in ('findstr /I "flash-attn" "%REPO_DIR%\requirements.txt"') do (
-    set "FLASH_LINE=%%a"
-    REM Извлекаем URL после @
-    set "FLASH_URL=!FLASH_LINE:*@ =!"
+    set "FLASH_RAW=%%a"
+    REM Убираем "flash-attn @ " из начала строки
+    set "FLASH_URL=!FLASH_RAW:flash-attn @ =!"
+    REM Обрезаем по ; (PEP 508 markers типа ; sys_platform == 'win32')
+    for /f "delims=;" %%b in ("!FLASH_URL!") do set "FLASH_URL=%%b"
+    REM Убираем пробелы в конце
+    set "FLASH_URL=!FLASH_URL: =!"
     goto flash_url_found
 )
 :flash_url_found
@@ -168,10 +172,10 @@ if "!FLASH_URL!"=="" (
 )
 
 echo   %ESC%[2m       Загрузка через curl...%ESC%[0m
-set "FLASH_FILE=%TEMP%\flash_attn.whl"
-set "USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+set "USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
-curl -L -A "%USER_AGENT%" -o "%FLASH_FILE%" "!FLASH_URL!" --connect-timeout 30 --max-time 600 >nul 2>&1
+REM Хардкод имени файла — curl сам создаст с правильным именем
+curl -L -A "%USER_AGENT%" -o "%TEMP%\flash_attn.whl" "!FLASH_URL!" --connect-timeout 30 --max-time 600 --progress-bar
 if !errorlevel! neq 0 (
     echo   %ESC%[1;31m  -   Не удалось загрузить flash_attn.%ESC%[0m
     echo   %ESC%[33m       Попробуйте с VPN или скачайте вручную:%ESC%[0m
@@ -179,29 +183,29 @@ if !errorlevel! neq 0 (
     goto flash_done
 )
 
-REM Проверяем, файл скачался и не пустой
-if not exist "%FLASH_FILE%" (
+REM Проверяем, файл скачался
+if not exist "%TEMP%\flash_attn.whl" (
     echo   %ESC%[1;31m  -   Файл не создан.%ESC%[0m
     goto flash_done
 )
-for %%F in ("%FLASH_FILE%") do set "FLASH_SIZE=%%~zF"
+for %%F in ("%TEMP%\flash_attn.whl") do set "FLASH_SIZE=%%~zF"
 if !FLASH_SIZE! lss 1000000 (
-    echo   %ESC%[1;31m  -   Файл слишком маленький — возможно, HTML-страница ошибки.%ESC%[0m
-    del "%FLASH_FILE%" 2>nul
+    echo   %ESC%[1;31m  -   Файл слишком маленький.%ESC%[0m
+    del "%TEMP%\flash_attn.whl" 2>nul
     goto flash_done
 )
 
 echo   %ESC%[1;32m  +   Загружено (!FLASH_SIZE! байт).%ESC%[0m
 echo   %ESC%[1;33m→ Установка из файла...%ESC%[0m
 
-"%VENV_PIP%" install "%FLASH_FILE%" --no-deps
+"%VENV_PIP%" install "%TEMP%\flash_attn.whl" --no-deps
 if !errorlevel! equ 0 (
     echo   %ESC%[1;32m  +   flash_attn установлен.%ESC%[0m
 ) else (
     echo   %ESC%[1;31m[ОШИБКА] Установка flash_attn не удалась.%ESC%[0m
 )
 
-del "%FLASH_FILE%" 2>nul
+del "%TEMP%\flash_attn.whl" 2>nul
 
 :flash_done
 
