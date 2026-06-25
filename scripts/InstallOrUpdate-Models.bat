@@ -158,17 +158,14 @@ if not exist "%MODEL_PATH%" mkdir "%MODEL_PATH%" 2>nul
 REM ============================================================================
 REM   Скачивание через huggingface-cli
 REM ============================================================================
-set "HF_REPO=ace-step/ACE-Step-1.5"
+set "HF_REPO=ACE-Step/acestep-v15-%MODEL%"
 
 echo   %ESC%[2m       Репозиторий: %HF_REPO%%ESC%[0m
 echo   %ESC%[2m       Модель: %MODEL%%ESC%[0m
 echo   %ESC%[2m       Путь: %MODEL_PATH%%ESC%[0m
 echo.
 
-REM Путь в репозитории: acestep-v15-MODEL/ (например: acestep-v15-base/, acestep-v15-xl-base/)
-set "HF_PATH=acestep-v15-%MODEL%"
-
-hf download %HF_REPO% --include "%HF_PATH%/*" --local-dir "%MODEL_PATH%"
+hf download %HF_REPO% --local-dir "%MODEL_PATH%"
 
 if !errorlevel! neq 0 (
     echo.
