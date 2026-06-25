@@ -36,7 +36,7 @@ if not exist "%HOME%" mkdir "%HOME%" 2>nul
 cls
 echo.
 echo  %ESC%[1;36m╔══════════════════════════════════════════════════════════════════════════════╗%ESC%[0m
-echo  %ESC%[1;36m║%ESC%[0m          %ESC%[1;37mAceStep-1.5%ESC%[0m  —  %ESC%[1;33mУстановка PyTorch + зависимостей%ESC%[0m           %ESC%[1;36m║%ESC%[0m
+echo  %ESC%[1;36m║%ESC%[0m               %ESC%[1;37mAceStep-1.5%ESC%[0m  —  %ESC%[1;33mУстановка PyTorch + зависимостей%ESC%[0m               %ESC%[1;36m║%ESC%[0m
 echo  %ESC%[1;36m╚══════════════════════════════════════════════════════════════════════════════╝%ESC%[0m
 echo.
 
@@ -68,19 +68,25 @@ echo   %ESC%[1;33m→ Определение видеокарты...%ESC%[0m
 set "GPU_TYPE=UNKNOWN"
 set "GPU_NAME=Не определена"
 
-REM NVIDIA через nvidia-smi
-nvidia-smi >nul 2>nul
+REM NVIDIA через nvidia-smi -L (универсально, все версии драйверов)
+nvidia-smi -L >nul 2>nul
 if !errorlevel! equ 0 (
-    for /f "tokens=*" %%a in ('nvidia-smi --query-gpu=name --format=csv,noheader 2^>nul') do set "GPU_NAME=%%a"
-    set "GPU_TYPE=NVIDIA"
-    echo   %ESC%[1;32m  +   NVIDIA: !GPU_NAME!%ESC%[0m
-    goto gpu_detected
+    for /f "tokens=*" %%a in ('nvidia-smi -L 2^>nul') do (
+        set "RAW=%%a"
+        REM "GPU 0: NVIDIA GeForce RTX 5090 (UUID: GPU-xxx...)"
+        set "RAW=!RAW:GPU 0: =!"
+        for /f "delims=(" %%b in ("!RAW!") do set "GPU_NAME=%%b"
+        set "GPU_NAME=!GPU_NAME:~0,-1!"  REM убираем пробел в конце
+        set "GPU_TYPE=NVIDIA"
+        echo   %ESC%[1;32m  +   NVIDIA: !GPU_NAME!%ESC%[0m
+        goto gpu_detected
+    )
 )
 
 REM AMD через wmic
 for /f "tokens=*" %%a in ('wmic path win32_VideoController get Name /value 2^>nul ^| findstr /I "AMD Radeon"') do (
     set "GPU_NAME=%%a"
-    set "GPU_NAME=!GPU_NAME:~5!"
+    set "GPU_NAME=!GPU_NAME:~5!"  REM убираем "Name="
     set "GPU_TYPE=AMD"
 )
 if "!GPU_TYPE!"=="AMD" (
@@ -96,7 +102,6 @@ exit /b 1
 
 :gpu_detected
 echo.
-
 REM ============================================================================
 REM   Разветвление по GPU
 REM ============================================================================
