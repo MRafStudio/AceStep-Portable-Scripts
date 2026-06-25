@@ -264,8 +264,10 @@ if "!FLASH_URL!"=="" (
 echo   %ESC%[2m       Загрузка через curl...%ESC%[0m
 set "USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
-REM Хардкод имени файла — curl сам создаст с правильным именем
-curl -L -A "%USER_AGENT%" -o "%TEMP%\flash_attn.whl" "!FLASH_URL!" --connect-timeout 30 --max-time 600 --progress-bar
+REM Хардкод правильного имени файла
+set "FLASH_NAME=flash_attn-2.8.2+cu128torch2.7.1cxx11abiFALSEfullbackward-cp311-cp311-win_amd64.whl"
+
+curl -L -A "%USER_AGENT%" -o "!TEMP!\!FLASH_NAME!" "!FLASH_URL!" --connect-timeout 30 --max-time 600 --progress-bar
 if !errorlevel! neq 0 (
     echo   %ESC%[1;31m  -   Не удалось загрузить flash_attn.%ESC%[0m
     echo   %ESC%[33m       Попробуйте с VPN или скачайте вручную:%ESC%[0m
@@ -274,28 +276,28 @@ if !errorlevel! neq 0 (
 )
 
 REM Проверяем, файл скачался
-if not exist "%TEMP%\flash_attn.whl" (
+if not exist "!TEMP!\!FLASH_NAME!" (
     echo   %ESC%[1;31m  -   Файл не создан.%ESC%[0m
     goto flash_done
 )
-for %%F in ("%TEMP%\flash_attn.whl") do set "FLASH_SIZE=%%~zF"
+for %%F in ("!TEMP!\!FLASH_NAME!") do set "FLASH_SIZE=%%~zF"
 if !FLASH_SIZE! lss 1000000 (
     echo   %ESC%[1;31m  -   Файл слишком маленький.%ESC%[0m
-    del "%TEMP%\flash_attn.whl" 2>nul
+    del "!TEMP!\!FLASH_NAME!" 2>nul
     goto flash_done
 )
 
 echo   %ESC%[1;32m  +   Загружено (!FLASH_SIZE! байт).%ESC%[0m
 echo   %ESC%[1;33m→ Установка из файла...%ESC%[0m
 
-"%VENV_PIP%" install "%TEMP%\flash_attn.whl" --no-deps
+"%VENV_PIP%" install "!TEMP!\!FLASH_NAME!" --no-deps
 if !errorlevel! equ 0 (
     echo   %ESC%[1;32m  +   flash_attn установлен.%ESC%[0m
 ) else (
     echo   %ESC%[1;31m[ОШИБКА] Установка flash_attn не удалась.%ESC%[0m
 )
 
-del "%TEMP%\flash_attn.whl" 2>nul
+del "!TEMP!\!FLASH_NAME!" 2>nul
 
 :flash_done
 
