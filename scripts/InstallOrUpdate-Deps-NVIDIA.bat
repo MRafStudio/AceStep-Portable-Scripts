@@ -213,9 +213,31 @@ REM   Зависимости ACE-Step
 REM ============================================================================
 echo.
 echo   %ESC%[1;33m[4/4]%ESC%[0m %ESC%[1mУстановка зависимостей ACE-Step...%ESC%[0m
-"%VENV_PIP%" install -r "%REPO_DIR%\requirements.txt" --quiet
-if !errorlevel! neq 0 (
-    echo   %ESC%[1;33m  ⚠   Некоторые зависимости не установились.%ESC%[0m
+echo   %ESC%[2m       Это может занять 5-15 минут...%ESC%[0m
+
+set "PIP_TIMEOUT=120"
+set "PIP_RETRIES=10"
+
+"%VENV_PIP%" install -r "%REPO_DIR%\requirements.txt" --timeout %PIP_TIMEOUT% --retries %PIP_RETRIES%
+set "DEPS_OK=!errorlevel!"
+
+if !DEPS_OK! neq 0 (
+    echo.
+    echo   %ESC%[1;33m→ Пробуем без flash_attn...%ESC%[0m
+    
+    findstr /V /I "flash-attn" "%REPO_DIR%\requirements.txt" > "%TEMP%\requirements_no_flash.txt" 2>nul
+    "%VENV_PIP%" install -r "%TEMP%\requirements_no_flash.txt" --timeout %PIP_TIMEOUT% --retries %PIP_RETRIES%
+    
+    if !errorlevel! equ 0 (
+        echo   %ESC%[1;32m  +   Основные зависимости установлены.%ESC%[0m
+        echo   %ESC%[1;33m  ⚠   flash_attn пропущен. Установите вручную:%ESC%[0m
+        echo   %ESC%[33m       https://github.com/Dao-AILab/flash-attention/releases%ESC%[0m
+    ) else (
+        echo   %ESC%[1;31m[ОШИБКА] Не удалось установить зависимости.%ESC%[0m
+        echo   %ESC%[33m       Проверьте интернет и повторите.%ESC%[0m
+    )
+    
+    del "%TEMP%\requirements_no_flash.txt" 2>nul
 ) else (
     echo   %ESC%[1;32m  +   Зависимости установлены.%ESC%[0m
 )
@@ -234,7 +256,7 @@ if !errorlevel! equ 0 (
 
 echo.
 echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;32mГотово!%ESC%[0m  %ESC%[2mPyTorch CUDA !CUDA_VER! установлен.%ESC%[0m
+echo   %ESC%[1;32mГотово! %ESC%[0m  %ESC%[2mPyTorch CUDA !CUDA_VER! установлен.%ESC%[0m
 echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
 echo.
 
