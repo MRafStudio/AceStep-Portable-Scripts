@@ -1,10 +1,17 @@
 # AceStep-Portable-Scripts
 
-Portable Windows scripts and Russian localization for [ACE-Step-1.5](https://github.com/ace-step/ACE-Step-1.5).
+Скрипты для портативной Windows установки ACE-Step-1.5 с русской локализацией
+Форк на [ACE-Step-1.5](https://github.com/MRafStudio/ACE-Step-1.5).
+Оригинальный проект на [ACE-Step-1.5](https://github.com/ace-step/ACE-Step-1.5).
 
 ## 🚀 Быстрый старт
 
-1. Склонируйте этот репозиторий в `D:\AceStep-1.5`
+1. Склонируйте этот репозиторий в `D:\AceStep-1.5` например:
+```text
+     cd D:/
+     git clone https://github.com/MRafStudio/AceStep-Portable-Scripts.git AceStep-1.5
+     cd AceStep-1.5
+```
 2. Запустите `Start.bat`
 3. Выберите "Установка / Обновление компонентов" → "Установить все"
 4. После установки выберите "Запуск AceStep-1.5"
