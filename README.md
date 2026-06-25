@@ -14,7 +14,7 @@ Portable Windows scripts and Russian localization for [ACE-Step-1.5](https://git
 D:\AceStep-1.5
 ├── Start.bat              # Главное меню
 ├── scripts\               # Скрипты установки и запуска
-├── repo\                  # Клон вашего форка ACE-Step-1.5
+├── repo\                  # Клон форка ACE-Step-1.5
 ├── python-3.11.9\         # Portable Python
 ├── models\                # Модели (base, xl-base, xl-sft, xl-turbo)
 ├── data\                  # Изоляция AppData, TEMP, HOME

@@ -1,3 +1,4 @@
+REM scripts\Update-From-Upstream.bat
 @echo off
 chcp 65001 >nul
 setlocal enabledelayedexpansion

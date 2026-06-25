@@ -1,3 +1,4 @@
+REM scripts\InstallOrUpdate-Python.bat
 @echo off
 chcp 65001 >nul
 setlocal enabledelayedexpansion
