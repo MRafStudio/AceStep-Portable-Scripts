@@ -116,7 +116,7 @@ if not exist "%CONFIG_FILE%" (
 REM ============================================================================
 REM   Чтение Config.ini
 REM ============================================================================
-set "CURRENT_MODEL=xl-base"
+set "CURRENT_MODEL=turbo"
 set "AUTO_OPEN_BROWSER=1"
 set "LAUNCH_METHOD=gradio"
 
@@ -131,6 +131,17 @@ set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
 :menu
+REM Перечитываем Config.ini (мог измениться в других скриптах)
+if exist "%CONFIG_FILE%" (
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"CURRENT_MODEL=" "%CONFIG_FILE%"') do set "CURRENT_MODEL=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"AUTO_OPEN_BROWSER=" "%CONFIG_FILE%"') do set "AUTO_OPEN_BROWSER=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LAUNCH_METHOD=" "%CONFIG_FILE%"') do set "LAUNCH_METHOD=%%b"
+)
+
+set "CURRENT_MODEL=%CURRENT_MODEL: =%"
+set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
+set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
+
 cls
 echo.
 echo  %ESC%[1;36m################################################################################%ESC%[0m
