@@ -35,7 +35,7 @@ if not exist "%HOME%" mkdir "%HOME%" 2>nul
 cls
 echo.
 echo  %ESC%[1;36m╔══════════════════════════════════════════════════════════════════════════════╗%ESC%[0m
-echo  %ESC%[1;36m║%ESC%[0m                 %ESC%[1;37mAceStep-1.5%ESC%[0m  —  %ESC%[1;33mAMD ROCm%ESC%[0m                          %ESC%[1;36m║%ESC%[0m
+echo  %ESC%[1;36m║%ESC%[0m                         %ESC%[1;37mAceStep-1.5%ESC%[0m  —  %ESC%[1;33mAMD ROCm%ESC%[0m                           %ESC%[1;36m║%ESC%[0m
 echo  %ESC%[1;36m╚══════════════════════════════════════════════════════════════════════════════╝%ESC%[0m
 echo.
 
@@ -87,15 +87,36 @@ REM   PyTorch ROCm
 REM ============================================================================
 echo.
 echo   %ESC%[1;33m[3/4]%ESC%[0m %ESC%[1mУстановка PyTorch ROCm...%ESC%[0m
+echo   %ESC%[2m       Источник: https://download.pytorch.org/whl/rocm6.2%ESC%[0m
 
-"%VENV_PIP%" install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2 --quiet
+REM Проверка: уже установлена ROCm версия?
+"%VENV_PYTHON%" -c "import torch; import sys; v=torch.__version__; h=torch.version.hip if hasattr(torch.version, 'hip') else None; sys.exit(0 if (h and '2.' in v) else 1)" >nul 2>nul
+if !errorlevel! equ 0 (
+    echo   %ESC%[1;32m  +   PyTorch ROCm уже установлен.%ESC%[0m
+    goto pytorch_done
+)
+
+echo   %ESC%[2m       Загрузка ~2-3 GB, может занять 10-30 минут...%ESC%[0m
+echo   %ESC%[2m       Не закрывайте окно! При прерывании повторный запуск докачает из кэша.%ESC%[0m
+echo.
+
+REM Установка БЕЗ --quiet — видим прогресс
+"%VENV_PIP%" install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
+
 if !errorlevel! neq 0 (
+    echo.
     echo   %ESC%[1;31m[ОШИБКА] PyTorch ROCm не установился.%ESC%[0m
+    echo   %ESC%[33m       Возможные причины:%ESC%[0m
+    echo   %ESC%[33m       1. Прервалась загрузка — запустите повторно, докачает из кэша%ESC%[0m
+    echo   %ESC%[33m       2. Нет интернета%ESC%[0m
+    echo   %ESC%[33m       3. ROCm не поддерживает вашу карту%ESC%[0m
     if "%AUTOCLOSE%"=="0" pause
     popd
     exit /b 1
 )
 echo   %ESC%[1;32m  +   PyTorch ROCm установлен.%ESC%[0m
+
+:pytorch_done
 
 REM ============================================================================
 REM   Зависимости ACE-Step

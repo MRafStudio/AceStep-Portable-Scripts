@@ -35,7 +35,7 @@ if not exist "%HOME%" mkdir "%HOME%" 2>nul
 cls
 echo.
 echo  %ESC%[1;36m╔══════════════════════════════════════════════════════════════════════════════╗%ESC%[0m
-echo  %ESC%[1;36m║%ESC%[0m                 %ESC%[1;37mAceStep-1.5%ESC%[0m  —  %ESC%[1;33mNVIDIA CUDA%ESC%[0m                       %ESC%[1;36m║%ESC%[0m
+echo  %ESC%[1;36m║%ESC%[0m                         %ESC%[1;37mAceStep-1.5%ESC%[0m  —  %ESC%[1;33mNVIDIA CUDA%ESC%[0m                          %ESC%[1;36m║%ESC%[0m
 echo  %ESC%[1;36m╚══════════════════════════════════════════════════════════════════════════════╝%ESC%[0m
 echo.
 
@@ -61,14 +61,29 @@ echo   %ESC%[1;33m→ Определение поколения...%ESC%[0m
 set "CUDA_URL=https://download.pytorch.org/whl/cu124"
 set "CUDA_VER=12.4"
 
-for /f "tokens=*" %%a in ('nvidia-smi --query-gpu=name --format=csv,noheader 2^>nul') do set "GPU_FULLNAME=%%a"
+REM Используем nvidia-smi -L (универсально, все версии драйверов)
+for /f "tokens=*" %%a in ('nvidia-smi -L 2^>nul') do (
+    set "RAW=%%a"
+    set "RAW=!RAW:GPU 0: =!"
+    for /f "delims=(" %%b in ("!RAW!") do set "GPU_FULLNAME=%%b"
+    set "GPU_FULLNAME=!GPU_FULLNAME:~0,-1!"
+    goto gpu_name_parsed
+)
+:gpu_name_parsed
+
+if "!GPU_FULLNAME!"=="" (
+    echo   %ESC%[1;31m  -   Не удалось определить GPU%ESC%[0m
+    goto manual_select
+)
+
+echo   %ESC%[2m       Обнаружено: !GPU_FULLNAME!%ESC%[0m
 
 REM RTX 50xx (Blackwell) — CUDA 12.8
 echo !GPU_FULLNAME! | findstr /I /R "RTX 50[0-9][0-9]" >nul 2>nul
 if !errorlevel! equ 0 (
     set "CUDA_URL=https://download.pytorch.org/whl/cu128"
     set "CUDA_VER=12.8"
-    echo   %ESC%[1;32m  +   Blackwell (RTX 50xx) — CUDA 12.8%ESC%[0m
+    echo   %ESC%[1;32m  +   Blackwell ^(RTX 50xx^) — CUDA 12.8%ESC%[0m
     goto cuda_selected
 )
 
@@ -77,7 +92,7 @@ echo !GPU_FULLNAME! | findstr /I /R "RTX 40[0-9][0-9]" >nul 2>nul
 if !errorlevel! equ 0 (
     set "CUDA_URL=https://download.pytorch.org/whl/cu124"
     set "CUDA_VER=12.4"
-    echo   %ESC%[1;32m  +   Ada (RTX 40xx) — CUDA 12.4%ESC%[0m
+    echo   %ESC%[1;32m  +   Ada ^(RTX 40xx^) — CUDA 12.4%ESC%[0m
     goto cuda_selected
 )
 
@@ -86,11 +101,11 @@ echo !GPU_FULLNAME! | findstr /I /R "RTX 30[0-9][0-9]" >nul 2>nul
 if !errorlevel! equ 0 (
     set "CUDA_URL=https://download.pytorch.org/whl/cu118"
     set "CUDA_VER=11.8"
-    echo   %ESC%[1;32m  +   Ampere (RTX 30xx) — CUDA 11.8%ESC%[0m
+    echo   %ESC%[1;32m  +   Ampere ^(RTX 30xx^) — CUDA 11.8%ESC%[0m
     goto cuda_selected
 )
 
-REM GTX 16xx, 10xx и старше — CUDA 11.8 (последняя поддерживаемая)
+REM GTX 16xx, 10xx и старше — CUDA 11.8
 echo !GPU_FULLNAME! | findstr /I /R "GTX 16[0-9][0-9] GTX 10[0-9][0-9]" >nul 2>nul
 if !errorlevel! equ 0 (
     set "CUDA_URL=https://download.pytorch.org/whl/cu118"
@@ -99,8 +114,10 @@ if !errorlevel! equ 0 (
     goto cuda_selected
 )
 
-REM Неизвестная NVIDIA — спрашиваем
+REM Неизвестная NVIDIA
 echo   %ESC%[1;33m  .   Поколение не определено: !GPU_FULLNAME!%ESC%[0m
+
+:manual_select
 echo.
 echo   %ESC%[1;33mВыберите CUDA:%ESC%[0m
 echo   %ESC%[1;37m[1]%ESC%[0m CUDA 12.8  %ESC%[2m(RTX 50xx — Blackwell)%ESC%[0m
@@ -160,16 +177,36 @@ REM   PyTorch CUDA
 REM ============================================================================
 echo.
 echo   %ESC%[1;33m[3/4]%ESC%[0m %ESC%[1mУстановка PyTorch CUDA !CUDA_VER!...%ESC%[0m
-echo   %ESC%[2m       !CUDA_URL!%ESC%[0m
+echo   %ESC%[2m       Источник: !CUDA_URL!%ESC%[0m
 
-"%VENV_PIP%" install torch torchvision torchaudio --index-url !CUDA_URL! --quiet
+REM Проверка: уже установлена нужная версия?
+"%VENV_PYTHON%" -c "import torch; import sys; v=torch.__version__; c=torch.version.cuda; sys.exit(0 if (c=='!CUDA_VER!' and '2.' in v) else 1)" >nul 2>nul
+if !errorlevel! equ 0 (
+    echo   %ESC%[1;32m  +   PyTorch CUDA !CUDA_VER! уже установлен.%ESC%[0m
+    goto pytorch_done
+)
+
+echo   %ESC%[2m       Загрузка ~2-3 GB, может занять 10-30 минут...%ESC%[0m
+echo   %ESC%[2m       Не закрывайте окно! При прерывании повторный запуск докачает из кэша.%ESC%[0m
+echo.
+
+REM Установка БЕЗ --quiet — видим прогресс
+"%VENV_PIP%" install torch torchvision torchaudio --index-url !CUDA_URL!
+
 if !errorlevel! neq 0 (
+    echo.
     echo   %ESC%[1;31m[ОШИБКА] PyTorch CUDA !CUDA_VER! не установился.%ESC%[0m
+    echo   %ESC%[33m       Возможные причины:%ESC%[0m
+    echo   %ESC%[33m       1. Прервалась загрузка — запустите повторно, докачает из кэша%ESC%[0m
+    echo   %ESC%[33m       2. Нет интернета%ESC%[0m
+    echo   %ESC%[33m       3. Неверная версия CUDA для вашей карты%ESC%[0m
     if "%AUTOCLOSE%"=="0" pause
     popd
     exit /b 1
 )
 echo   %ESC%[1;32m  +   PyTorch CUDA !CUDA_VER! установлен.%ESC%[0m
+
+:pytorch_done
 
 REM ============================================================================
 REM   Зависимости ACE-Step
