@@ -58,7 +58,7 @@ if !errorlevel! neq 0 (
 cls
 echo.
 echo  %ESC%[1;36m╔══════════════════════════════════════════════════════════════════════════════╗%ESC%[0m
-echo  %ESC%[1;36m║%ESC%[0m               %ESC%[1;37mAceStep-1.5%ESC%[0m   —   %ESC%[1;33mУстановка / Обновление моделей%ESC%[0m             %ESC%[1;36m║%ESC%[0m
+echo  %ESC%[1;36m║%ESC%[0m               %ESC%[1;37mAceStep-1.5%ESC%[0m   —   %ESC%[1;33mУстановка / Обновление моделей%ESC%[0m               %ESC%[1;36m║%ESC%[0m
 echo  %ESC%[1;36m╚══════════════════════════════════════════════════════════════════════════════╝%ESC%[0m
 echo.
 echo   %ESC%[1;33mДоступные модели:%ESC%[0m
@@ -75,7 +75,7 @@ echo   %ESC%[1;37m[6]%ESC%[0m %ESC%[1mxl-turbo%ESC%[0m  %ESC%[2m~19GB  VRAM: 12G
 echo.
 
 REM ============================================================================
-REM   Автоопределение GPU + рекомендация
+REM   Автоопределение GPU + VRAM через PowerShell
 REM ============================================================================
 set "GPU_NAME=Не определена"
 set "GPU_VRAM=0"
@@ -88,15 +88,21 @@ if !errorlevel! equ 0 (
         for /f "delims=(" %%b in ("!RAW!") do set "GPU_NAME=%%b"
         set "GPU_NAME=!GPU_NAME:~0,-1!"
     )
-    REM Пробуем получить VRAM (если nvidia-smi поддерживает)
-    for /f "tokens=*" %%a in ('nvidia-smi --query-gpu=memory.total --format=csv,noheader 2^>nul') do (
-        set "GPU_VRAM_STR=%%a"
-        for /f "tokens=1" %%b in ("!GPU_VRAM_STR!") do set "GPU_VRAM=%%b"
+    REM Получаем VRAM через PowerShell (обход noheader)
+    for /f "usebackq" %%a in (`powershell -NoProfile -Command "try { $v = (nvidia-smi --query-gpu=memory.total --format=csv,noheader 2>$null).Trim().Split(' ')[0]; if ($v -match '^\d+$') { [int]$v } else { 0 } } catch { 0 }"`) do (
+        set "GPU_VRAM=%%a"
     )
 ) else (
     for /f "tokens=*" %%a in ('wmic path win32_VideoController get Name /value 2^>nul ^| findstr /I "Name="') do (
         set "GPU_RAW=%%a"
         set "GPU_NAME=!GPU_RAW:~5!"
+    )
+    REM Для AMD/Intel через wmic AdapterRAM (байты → MiB)
+    for /f "tokens=2 delims==" %%a in ('wmic path win32_VideoController get AdapterRAM /value 2^>nul ^| findstr "AdapterRAM"') do (
+        set "GPU_VRAM_RAW=%%a"
+        for /f "usebackq" %%b in (`powershell -NoProfile -Command "[math]::Round(!GPU_VRAM_RAW! / 1048576)"`) do (
+            set "GPU_VRAM=%%b"
+        )
     )
 )
 
@@ -114,12 +120,12 @@ if !GPU_VRAM! geq 24000 (
 ) else if !GPU_VRAM! geq 12000 (
     echo   %ESC%[1;32m  XL turbo — оптимальный баланс скорости и качества%ESC%[0m
 ) else if !GPU_VRAM! geq 6000 (
-    echo   %ESC%[1;32m  Стандартные модели (2B) — стабильно и быстро%ESC%[0m
+    echo   %ESC%[1;32m  Стандартные модели ^(2B^) — стабильно и быстро%ESC%[0m
     echo   %ESC%[2m       turbo для максимальной скорости%ESC%[0m
 ) else if !GPU_VRAM! gtr 0 (
-    echo   %ESC%[1;33m  Мало VRAM. Попробуйте turbo (2B) или CPU.%ESC%[0m
+    echo   %ESC%[1;33m  Мало VRAM. Попробуйте turbo ^(2B^) или CPU.%ESC%[0m
 ) else (
-    echo   %ESC%[1;33m  Невозможно определить VRAM. Начните с turbo (2B).%ESC%[0m
+    echo   %ESC%[1;33m  Невозможно определить VRAM. Начните с turbo ^(2B^).%ESC%[0m
 )
 
 echo.
@@ -162,7 +168,7 @@ echo.
 REM Путь в репозитории: acestep-v15-MODEL/ (например: acestep-v15-base/, acestep-v15-xl-base/)
 set "HF_PATH=acestep-v15-%MODEL%"
 
-hf download %HF_REPO% --include "%HF_PATH%/*" --local-dir "%MODEL_PATH%" --local-dir-use-symlinks False
+hf download %HF_REPO% --include "%HF_PATH%/*" --local-dir "%MODEL_PATH%"
 
 if !errorlevel! neq 0 (
     echo.

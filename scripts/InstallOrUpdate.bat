@@ -124,11 +124,20 @@ set "MODEL_STATUS=Скачать"
 set "MODEL_COLOR=%ESC%[1;33m"
 set "MODEL_INSTALLED=0"
 if exist "%MODELS_DIR%" (
-    dir /b "%MODELS_DIR%\*" >nul 2>nul
-    if !errorlevel! equ 0 (
+    REM Ищем любые файлы моделей (.safetensors, .bin, .pt, config.json)
+    dir /s /b "%MODELS_DIR%\*.safetensors" >nul 2>nul
+    if !errorlevel! equ 0 set "MODEL_INSTALLED=1"
+    if !MODEL_INSTALLED! equ 0 (
+        dir /s /b "%MODELS_DIR%\*.bin" >nul 2>nul
+        if !errorlevel! equ 0 set "MODEL_INSTALLED=1"
+    )
+    if !MODEL_INSTALLED! equ 0 (
+        dir /s /b "%MODELS_DIR%\config.json" >nul 2>nul
+        if !errorlevel! equ 0 set "MODEL_INSTALLED=1"
+    )
+    if !MODEL_INSTALLED! equ 1 (
         set "MODEL_STATUS=Добавить"
         set "MODEL_COLOR=%ESC%[1;32m"
-        set "MODEL_INSTALLED=1"
     )
 )
 
