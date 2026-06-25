@@ -213,11 +213,12 @@ REM   Зависимости ACE-Step
 REM ============================================================================
 echo.
 echo   %ESC%[1;33m[4/4]%ESC%[0m %ESC%[1mУстановка зависимостей ACE-Step...%ESC%[0m
+echo   %ESC%[2m       Это может занять 5-15 минут...%ESC%[0m
 
-REM Сначала ставим всё кроме flash_attn (чтобы не падало на GitHub)
+REM Сначала ставим всё кроме flash_attn
 echo   %ESC%[2m       Установка основных зависимостей...%ESC%[0m
 findstr /V /I "flash-attn" "%REPO_DIR%\requirements.txt" > "%TEMP%\requirements_base.txt"
-"%VENV_PIP%" install -r "%TEMP%\requirements_base.txt" --quiet
+"%VENV_PIP%" install -r "%TEMP%\requirements_base.txt"
 if !errorlevel! neq 0 (
     echo   %ESC%[1;31m[ОШИБКА] Основные зависимости не установились.%ESC%[0m
     del "%TEMP%\requirements_base.txt" 2>nul
