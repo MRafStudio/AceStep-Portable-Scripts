@@ -213,34 +213,86 @@ REM   Зависимости ACE-Step
 REM ============================================================================
 echo.
 echo   %ESC%[1;33m[4/4]%ESC%[0m %ESC%[1mУстановка зависимостей ACE-Step...%ESC%[0m
-echo   %ESC%[2m       Это может занять 5-15 минут...%ESC%[0m
 
-set "PIP_TIMEOUT=120"
-set "PIP_RETRIES=10"
-
-"%VENV_PIP%" install -r "%REPO_DIR%\requirements.txt" --timeout %PIP_TIMEOUT% --retries %PIP_RETRIES%
-set "DEPS_OK=!errorlevel!"
-
-if !DEPS_OK! neq 0 (
-    echo.
-    echo   %ESC%[1;33m→ Пробуем без flash_attn...%ESC%[0m
-    
-    findstr /V /I "flash-attn" "%REPO_DIR%\requirements.txt" > "%TEMP%\requirements_no_flash.txt" 2>nul
-    "%VENV_PIP%" install -r "%TEMP%\requirements_no_flash.txt" --timeout %PIP_TIMEOUT% --retries %PIP_RETRIES%
-    
-    if !errorlevel! equ 0 (
-        echo   %ESC%[1;32m  +   Основные зависимости установлены.%ESC%[0m
-        echo   %ESC%[1;33m  ⚠   flash_attn пропущен. Установите вручную:%ESC%[0m
-        echo   %ESC%[33m       https://github.com/Dao-AILab/flash-attention/releases%ESC%[0m
-    ) else (
-        echo   %ESC%[1;31m[ОШИБКА] Не удалось установить зависимости.%ESC%[0m
-        echo   %ESC%[33m       Проверьте интернет и повторите.%ESC%[0m
-    )
-    
-    del "%TEMP%\requirements_no_flash.txt" 2>nul
-) else (
-    echo   %ESC%[1;32m  +   Зависимости установлены.%ESC%[0m
+REM Сначала ставим всё кроме flash_attn (чтобы не падало на GitHub)
+echo   %ESC%[2m       Установка основных зависимостей...%ESC%[0m
+findstr /V /I "flash-attn" "%REPO_DIR%\requirements.txt" > "%TEMP%\requirements_base.txt"
+"%VENV_PIP%" install -r "%TEMP%\requirements_base.txt" --quiet
+if !errorlevel! neq 0 (
+    echo   %ESC%[1;31m[ОШИБКА] Основные зависимости не установились.%ESC%[0m
+    del "%TEMP%\requirements_base.txt" 2>nul
+    if "%AUTOCLOSE%"=="0" pause
+    popd
+    exit /b 1
 )
+echo   %ESC%[1;32m  +   Основные зависимости установлены.%ESC%[0m
+del "%TEMP%\requirements_base.txt" 2>nul
+
+REM ============================================================================
+REM   flash_attn отдельно (GitHub Releases — curl с User-Agent)
+REM ============================================================================
+echo.
+echo   %ESC%[1;33m→ Установка flash_attn...%ESC%[0m
+
+REM Проверяем, уже установлен?
+"%VENV_PYTHON%" -c "import flash_attn" >nul 2>nul
+if !errorlevel! equ 0 (
+    echo   %ESC%[1;32m  +   flash_attn уже установлен.%ESC%[0m
+    goto flash_done
+)
+
+REM Парсим URL из requirements.txt
+set "FLASH_URL="
+for /f "tokens=*" %%a in ('findstr /I "flash-attn" "%REPO_DIR%\requirements.txt"') do (
+    set "FLASH_LINE=%%a"
+    REM Извлекаем URL после @
+    set "FLASH_URL=!FLASH_LINE:*@ =!"
+    goto flash_url_found
+)
+:flash_url_found
+
+if "!FLASH_URL!"=="" (
+    echo   %ESC%[1;33m  ⚠   URL flash_attn не найден в requirements.txt%ESC%[0m
+    goto flash_done
+)
+
+echo   %ESC%[2m       Загрузка через curl...%ESC%[0m
+set "FLASH_FILE=%TEMP%\flash_attn.whl"
+set "USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+
+curl -L -A "%USER_AGENT%" -o "%FLASH_FILE%" "!FLASH_URL!" --connect-timeout 30 --max-time 600 >nul 2>&1
+if !errorlevel! neq 0 (
+    echo   %ESC%[1;31m  -   Не удалось загрузить flash_attn.%ESC%[0m
+    echo   %ESC%[33m       Попробуйте с VPN или скачайте вручную:%ESC%[0m
+    echo   %ESC%[33m       !FLASH_URL!%ESC%[0m
+    goto flash_done
+)
+
+REM Проверяем, файл скачался и не пустой
+if not exist "%FLASH_FILE%" (
+    echo   %ESC%[1;31m  -   Файл не создан.%ESC%[0m
+    goto flash_done
+)
+for %%F in ("%FLASH_FILE%") do set "FLASH_SIZE=%%~zF"
+if !FLASH_SIZE! lss 1000000 (
+    echo   %ESC%[1;31m  -   Файл слишком маленький — возможно, HTML-страница ошибки.%ESC%[0m
+    del "%FLASH_FILE%" 2>nul
+    goto flash_done
+)
+
+echo   %ESC%[1;32m  +   Загружено (!FLASH_SIZE! байт).%ESC%[0m
+echo   %ESC%[1;33m→ Установка из файла...%ESC%[0m
+
+"%VENV_PIP%" install "%FLASH_FILE%" --no-deps
+if !errorlevel! equ 0 (
+    echo   %ESC%[1;32m  +   flash_attn установлен.%ESC%[0m
+) else (
+    echo   %ESC%[1;31m[ОШИБКА] Установка flash_attn не удалась.%ESC%[0m
+)
+
+del "%FLASH_FILE%" 2>nul
+
+:flash_done
 
 REM ============================================================================
 REM   Проверка
@@ -256,7 +308,7 @@ if !errorlevel! equ 0 (
 
 echo.
 echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;32mГотово! %ESC%[0m  %ESC%[2mPyTorch CUDA !CUDA_VER! установлен.%ESC%[0m
+echo   %ESC%[1;32mГотово: %ESC%[0m  %ESC%[2mPyTorch CUDA !CUDA_VER! установлен.%ESC%[0m
 echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
 echo.
 

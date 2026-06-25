@@ -47,8 +47,11 @@ set "PATH=%PYTHON_DIR%;%PYTHON_DIR%\Scripts;%PATH%"
 
 where hf >nul 2>nul
 if !errorlevel! neq 0 (
-    echo   %ESC%[1;33m  →   Установка huggingface-hub...%ESC%[0m
-    "%PYTHON_EXE%" -m pip install huggingface-hub --quiet --no-warn-script-location
+    echo   %ESC%[1;31m[ОШИБКА] hf.exe не найден!%ESC%[0m
+    echo   %ESC%[33m       Запустите установку Python сначала.%ESC%[0m
+    if "%AUTOCLOSE%"=="0" pause
+    popd
+    exit /b 1
 )
 
 :menu

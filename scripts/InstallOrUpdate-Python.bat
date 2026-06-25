@@ -207,7 +207,7 @@ if !errorlevel! neq 0 (
     set "PIP_CACHE_DIR=%DATA_DIR%\pip-cache"
     set "PYTHONUSERBASE=%DATA_DIR%\python-user"
     
-    "%PYTHON_EXE%" -m pip install huggingface-hub --quiet --no-warn-script-location --cache-dir "%PIP_CACHE_DIR%" --user
+    "%PYTHON_EXE%" -m pip install huggingface-hub --quiet --no-warn-script-location --cache-dir "%PIP_CACHE_DIR%"
     
     if !errorlevel! neq 0 (
         echo   %ESC%[1;31m^[ОШИБКА^] Не удалось установить huggingface-hub.%ESC%[0m
@@ -230,7 +230,7 @@ if !errorlevel! neq 0 (
     set "PIP_CACHE_DIR=%DATA_DIR%\pip-cache"
     set "PYTHONUSERBASE=%DATA_DIR%\python-user"
     
-    "%PYTHON_EXE%" -m pip install --upgrade huggingface-hub --quiet --no-warn-script-location --cache-dir "%PIP_CACHE_DIR%" --user
+    "%PYTHON_EXE%" -m pip install --upgrade huggingface-hub --quiet --no-warn-script-location --cache-dir "%PIP_CACHE_DIR%"
     
     if !errorlevel! neq 0 (
         echo   %ESC%[1;33m  ⚠   Не удалось обновить huggingface-hub. Используется текущая версия.%ESC%[0m
