@@ -5,12 +5,10 @@ setlocal enabledelayedexpansion
 title AceStep-1.5 Portable — Главное меню
 pushd %~dp0
 
-for /f %%a in ('powershell -Command "Write-Host ([char]27) -NoNewline"') do set "ESC=%%a"
-
 REM ============================================================================
 REM   Пути (относительно Start.bat)
 REM ============================================================================
-set "ROOT_DIR=%~dp0"
+for %%F in ("%~dp0") do set "ROOT_DIR=%%~fF"
 set "ROOT_DIR=%ROOT_DIR:~0,-1%"
 set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
@@ -36,10 +34,60 @@ if not exist "%LOCALAPPDATA%" mkdir "%LOCALAPPDATA%" 2>nul
 if not exist "%HOME%" mkdir "%HOME%" 2>nul
 
 REM ============================================================================
+REM   PowerShell wrapper (изоляция)
+REM ============================================================================
+set "PS_WRAPPER=%TEMP%\ps_wrapper.bat"
+(
+    echo @echo off
+    echo set "LOCALAPPDATA=%DATA_DIR%\localappdata"
+    echo set "APPDATA=%DATA_DIR%\appdata"
+    echo set "TEMP=%TEMP%"
+    echo set "TMP=%TMP%"
+    echo set "HOME=%HOME%"
+    echo set "USERPROFILE=%USERPROFILE%"
+    echo powershell -NoProfile -NonInteractive %%*
+) > "%PS_WRAPPER%"
+
+for /f "usebackq" %%a in (`%PS_WRAPPER% -Command "Write-Host ([char]27) -NoNewline"`) do set "ESC=%%a"
+
+REM ============================================================================
+REM   Проверка глобального Git (ОБЯЗАТЕЛЬНО!)
+REM ============================================================================
+set "GIT_FOUND=0"
+git --version >nul 2>nul
+if !errorlevel! equ 0 (
+    for /f "tokens=*" %%a in ('git --version 2^>nul') do set "GIT_VER=%%a"
+    set "GIT_FOUND=1"
+)
+
+if !GIT_FOUND! equ 0 (
+    cls
+    echo.
+    echo  %ESC%[1;31m################################################################################%ESC%[0m
+    echo  %ESC%[1;31m##                                                                            ##%ESC%[0m
+    echo  %ESC%[1;31m##%ESC%[0m                  %ESC%[1;37mGit не найден в системе%ESC%[0m                                %ESC%[1;31m##%ESC%[0m
+    echo  %ESC%[1;31m##                                                                            ##%ESC%[0m
+    echo  %ESC%[1;31m################################################################################%ESC%[0m
+    echo.
+    echo   %ESC%[1;31m[ОШИБКА] Git не установлен или не добавлен в PATH.%ESC%[0m
+    echo.
+    echo   %ESC%[1;33mДля работы со скриптами требуется глобальный Git.%ESC%[0m
+    echo.
+    echo   %ESC%[1;37mСкачайте и установите Git for Windows:%ESC%[0m
+    echo   %ESC%[1;36mhttps://git-scm.com/download/win%ESC%[0m
+    echo.
+    echo   %ESC%[2mПосле установки перезапустите Start.bat%ESC%[0m
+    echo.
+    pause
+    popd
+    exit /b 1
+)
+
+REM ============================================================================
 REM   Авто-создание Config.ini если нет
 REM ============================================================================
 if not exist "%CONFIG_FILE%" (
-    echo   %ESC%[1;33m→%ESC%[0m %ESC%[1mСоздание Config.ini...%ESC%[0m
+    echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mСоздание Config.ini...%ESC%[0m
     (
         echo ; ============================================================
         echo ;   AceStep-1.5 Portable — Конфигурация
@@ -60,7 +108,7 @@ if not exist "%CONFIG_FILE%" (
         echo ; Для RTX 5090 ^(Blackwell^) — CUDA 12.8
         echo CUDA_VERSION=12.8
     ) > "%CONFIG_FILE%"
-    echo   %ESC%[1;32m  ✔   Config.ini создан.%ESC%[0m
+    echo   %ESC%[1;32m  +   Config.ini создан.%ESC%[0m
     echo.
 )
 
@@ -100,22 +148,14 @@ REM Python
 set "PYTHON_INSTALLED=0"
 if exist "%PYTHON_DIR%\python.exe" (
     for /f "tokens=1,2" %%a in ('"%PYTHON_DIR%\python.exe" --version 2^>nul') do set "PYTHON_VER=%%b"
-    echo     %ESC%[1;32m✔  %ESC%[0m Python !PYTHON_VER!
+    echo     %ESC%[1;32m+  %ESC%[0m Python !PYTHON_VER!
     set "PYTHON_INSTALLED=1"
 ) else (
-    echo     %ESC%[1;31m✗  %ESC%[0m Python — не установлен
+    echo     %ESC%[1;31m-  %ESC%[0m Python — не установлен
 )
 
-REM Git
-set "GIT_INSTALLED=0"
-where git >nul 2>nul
-if !errorlevel! equ 0 (
-    for /f "tokens=*" %%a in ('git --version 2^>nul') do set "GIT_VER=%%a"
-    echo     %ESC%[1;32m✔  %ESC%[0m Git
-    set "GIT_INSTALLED=1"
-) else (
-    echo     %ESC%[1;31m✗  %ESC%[0m Git — не установлен
-)
+REM Git (глобальный, уже проверен выше)
+echo     %ESC%[1;32m+  %ESC%[0m Git %GIT_VER%
 
 REM Репозиторий
 set "REPO_INSTALLED=0"
@@ -125,22 +165,22 @@ if exist "%REPO_DIR%\.git" (
     for /f "tokens=*" %%a in ('git branch --show-current 2^>nul') do set "REPO_BRANCH=%%a"
     cd /d "%ROOT_DIR%" 2>nul
     if "!REPO_BRANCH!"=="ru-localization" (
-        echo     %ESC%[1;32m✔  %ESC%[0m Репозиторий ACE-Step-1.5 %ESC%[2m^(ru-localization^)%ESC%[0m
+        echo     %ESC%[1;32m+  %ESC%[0m Репозиторий ACE-Step-1.5 %ESC%[2m^(ru-localization^)%ESC%[0m
     ) else (
-        echo     %ESC%[1;33m⚠  %ESC%[0m Репозиторий ACE-Step-1.5 %ESC%[2m^(!REPO_BRANCH!, ожидается ru-localization^)%ESC%[0m
+        echo     %ESC%[1;33m.  %ESC%[0m Репозиторий ACE-Step-1.5 %ESC%[2m^(!REPO_BRANCH!, ожидается ru-localization^)%ESC%[0m
     )
     set "REPO_INSTALLED=1"
 ) else (
-    echo     %ESC%[1;31m✗  %ESC%[0m Репозиторий — не клонирован
+    echo     %ESC%[1;31m-  %ESC%[0m Репозиторий — не клонирован
 )
 
 REM Зависимости Python
 set "DEPS_INSTALLED=0"
 if exist "%REPO_DIR%\.venv\Lib\site-packages\torch" (
-    echo     %ESC%[1;32m✔  %ESC%[0m PyTorch + зависимости
+    echo     %ESC%[1;32m+  %ESC%[0m PyTorch + зависимости
     set "DEPS_INSTALLED=1"
 ) else (
-    echo     %ESC%[1;31m✗  %ESC%[0m PyTorch + зависимости — не установлены
+    echo     %ESC%[1;31m-  %ESC%[0m PyTorch + зависимости — не установлены
 )
 
 REM Модель
@@ -148,17 +188,17 @@ set "MODEL_INSTALLED=0"
 if exist "%MODELS_DIR%\%CURRENT_MODEL%" (
     dir /b "%MODELS_DIR%\%CURRENT_MODEL%\*.safetensors" >nul 2>nul
     if !errorlevel! equ 0 (
-        echo     %ESC%[1;32m✔  %ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m
+        echo     %ESC%[1;32m+  %ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m
         set "MODEL_INSTALLED=1"
     ) else (
-        echo     %ESC%[1;31m✗  %ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m— не скачана%ESC%[0m
+        echo     %ESC%[1;31m-  %ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m— не скачана%ESC%[0m
     )
 ) else (
-    echo     %ESC%[1;31m✗  %ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m— не скачана%ESC%[0m
+    echo     %ESC%[1;31m-  %ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m— не скачана%ESC%[0m
 )
 
 REM Подсчёт
-set /a "INSTALLED_COUNT=!PYTHON_INSTALLED!+!GIT_INSTALLED!+!REPO_INSTALLED!+!DEPS_INSTALLED!+!MODEL_INSTALLED!"
+set /a "INSTALLED_COUNT=!PYTHON_INSTALLED!+!REPO_INSTALLED!+!DEPS_INSTALLED!+!MODEL_INSTALLED!"
 
 echo.
 echo   %ESC%[1;33mТекущие настройки:%ESC%[0m
@@ -172,7 +212,7 @@ echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1mНастройки%ESC%[0m %ESC%[2m(мод
 echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mИнструменты разработчика%ESC%[0m %ESC%[2m(Git, локализация, обновление)%ESC%[0m
 echo.
 
-if "!INSTALLED_COUNT!"=="5" (
+if "!INSTALLED_COUNT!"=="4" (
     echo   %ESC%[1;37m[*]%ESC%[0m %ESC%[1mЗапуск AceStep-1.5%ESC%[0m %ESC%[2m^(%LAUNCH_METHOD%^)%ESC%[0m
     echo     %ESC%[2m       http://127.0.0.1:7860%ESC%[0m
 ) else (
@@ -196,10 +236,10 @@ if "%choice%"=="0" goto exit
 goto menu
 
 :run
-if "!INSTALLED_COUNT!"=="5" (
+if "!INSTALLED_COUNT!"=="4" (
     cls
     echo.
-    echo   %ESC%[1;33m→%ESC%[0m %ESC%[1mЗапуск AceStep-1.5 ^(%LAUNCH_METHOD%^)...%ESC%[0m
+    echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mЗапуск AceStep-1.5 ^(%LAUNCH_METHOD%^)...%ESC%[0m
     echo.
     if /I "%LAUNCH_METHOD%"=="comfyui" (
         call "%SCRIPTS_DIR%\Start-ComfyUI.bat"
@@ -211,7 +251,7 @@ if "!INSTALLED_COUNT!"=="5" (
 ) else (
     cls
     echo.
-    echo   %ESC%[1;31m[ОШИБКА] Не все компоненты установлены!%ESC%[0m
+    echo   %ESC%[1;31m[ОШИБКА] Не все компоненты установлены.%ESC%[0m
     echo   %ESC%[33m       Запустите установку через пункт меню [1]%ESC%[0m
     echo.
     pause
@@ -231,7 +271,7 @@ cls
 echo.
 echo  %ESC%[1;36m################################################################################%ESC%[0m
 echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
-echo  %ESC%[1;36m##%ESC%[0m                %ESC%[1;37mAceStep-1.5 Portable%ESC%[0m   —   %ESC%[1;33mИнструменты разработчика%ESC%[0m       %ESC%[1;36m##%ESC%[0m
+echo  %ESC%[1;36m##%ESC%[0m               %ESC%[1;37mAceStep-1.5 Portable%ESC%[0m   —   %ESC%[1;33mИнструменты разработчика%ESC%[0m          %ESC%[1;36m##%ESC%[0m
 echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
 echo  %ESC%[1;36m################################################################################%ESC%[0m
 echo.
@@ -244,13 +284,13 @@ if exist "%REPO_DIR%\.git" (
     for /f "tokens=*" %%a in ('git branch --show-current 2^>nul') do set "REPO_BRANCH=%%a"
     cd /d "%ROOT_DIR%" 2>nul
     if "!REPO_BRANCH!"=="ru-localization" (
-        echo   %ESC%[1;32m✔  %ESC%[0m Репозиторий: %ESC%[1;33mru-localization%ESC%[0m
+        echo   %ESC%[1;32m+  %ESC%[0m Репозиторий: %ESC%[1;33mru-localization%ESC%[0m
     ) else (
-        echo   %ESC%[1;33m⚠  %ESC%[0m Репозиторий: %ESC%[1;33m!REPO_BRANCH!%ESC%[0m %ESC%[2m^(ожидается ru-localization^)%ESC%[0m
+        echo   %ESC%[1;33m.  %ESC%[0m Репозиторий: %ESC%[1;33m!REPO_BRANCH!%ESC%[0m %ESC%[2m^(ожидается ru-localization^)%ESC%[0m
     )
     set "REPO_EXISTS=1"
 ) else (
-    echo   %ESC%[1;31m✗  %ESC%[0m Репозиторий — не клонирован
+    echo   %ESC%[1;31m-  %ESC%[0m Репозиторий — не клонирован
 )
 
 echo.
@@ -288,12 +328,12 @@ goto dev_tools
 :update_scripts
 cls
 echo.
-echo   %ESC%[1;33m→%ESC%[0m %ESC%[1mОбновление скриптов из GitHub...%ESC%[0m
+echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mОбновление скриптов из GitHub...%ESC%[0m
 echo.
 cd /d "%ROOT_DIR%"
 git pull origin main
 if !errorlevel! equ 0 (
-    echo   %ESC%[1;32m  ✔   Скрипты обновлены!%ESC%[0m
+    echo   %ESC%[1;32m  +   Скрипты обновлены.%ESC%[0m
 ) else (
     echo   %ESC%[1;31m[ОШИБКА] Не удалось обновить скрипты.%ESC%[0m
     echo   %ESC%[33m       Возможно, есть локальные изменения.%ESC%[0m
