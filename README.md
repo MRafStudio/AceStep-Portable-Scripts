@@ -37,7 +37,7 @@ D:\AceStep-1.5
 | base | ~8GB | 8GB+ | Хорошее |
 | xl-base | ~20GB | 20GB+ | Отличное |
 | xl-sft | ~20GB | 20GB+ | Fine-tuned |
-| xl-turbo | ~20GB | 20GB+ | Очень быстрое |
+| xl-turbo | ~20GB | 20GB+ | Очень хорошее |
 
 ## ⚙️ Требования
 
