@@ -77,91 +77,24 @@ REM ============================================================================
 echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mРепозиторий найден. Обновление...%ESC%[0m
 echo.
 
-REM ============================================================================
-REM   Переход в репозиторий с проверкой
-REM ============================================================================
 cd /d "%REPO_DIR%"
 if !errorlevel! neq 0 (
     echo   %ESC%[1;31m[ОШИБКА] Не удалось перейти в %REPO_DIR%%ESC%[0m
     goto error_exit
 )
 
-REM Проверяем, что мы в git-репозитории
 if not exist ".git" (
     echo   %ESC%[1;31m[ОШИБКА] Не найден .git в %REPO_DIR%%ESC%[0m
-    echo   %ESC%[33m       Возможно, репозиторий повреждён. Удалите папку repo и повторите.%ESC%[0m
     goto error_exit
 )
 
 for /f "tokens=*" %%a in ('git branch --show-current 2^>nul') do set "CURRENT_BRANCH=%%a"
 echo   %ESC%[2m       Текущая ветка: !CURRENT_BRANCH!%ESC%[0m
 
-REM ============================================================================
-REM   Проверяем remote (с восстановлением если нужно)
-REM ============================================================================
-git remote -v >nul 2>nul
-if !errorlevel! neq 0 (
-    echo   %ESC%[1;33m.   Remote не найден. Восстановление...%ESC%[0m
-    git remote add origin https://github.com/MRafStudio/ACE-Step-1.5.git
-    git remote add upstream https://github.com/ace-step/ACE-Step-1.5.git
-    echo   %ESC%[1;32m  +   Remote восстановлен.%ESC%[0m
-) else (
-    echo   %ESC%[2m       Remote настроен.%ESC%[0m
-)
-
-REM Проверяем upstream отдельно
-git remote get-url upstream >nul 2>nul
-if !errorlevel! neq 0 (
-    echo   %ESC%[2m       Добавление upstream...%ESC%[0m
-    git remote add upstream https://github.com/ace-step/ACE-Step-1.5.git
-    echo   %ESC%[1;32m  +   Upstream добавлен.%ESC%[0m
-) else (
-    echo   %ESC%[2m       Upstream уже настроен.%ESC%[0m
-)
-
 echo.
-echo   %ESC%[1;33m[1/3]%ESC%[0m %ESC%[1mПолучение обновлений...%ESC%[0m
+echo   %ESC%[1;33m[1/3]%ESC%[0m %ESC%[1mПолучение обновлений из origin...%ESC%[0m
 git fetch origin
-git fetch upstream
 echo   %ESC%[1;32m  +   Обновления получены.%ESC%[0m
-
-REM ============================================================================
-REM   Проверяем/создаём ветку ru-localization
-REM ============================================================================
-git show-ref --verify --quiet refs/heads/ru-localization
-if !errorlevel! neq 0 (
-    echo.
-    echo   %ESC%[1;33m.   Локальная ветка ru-localization не найдена.%ESC%[0m
-    
-    REM Проверяем, есть ли на GitHub
-    git show-ref --verify --quiet refs/remotes/origin/ru-localization
-    if !errorlevel! equ 0 (
-        echo   %ESC%[33m       Создаём из origin/ru-localization...%ESC%[0m
-        git checkout -b ru-localization origin/ru-localization
-        echo   %ESC%[1;32m  +   Ветка ru-localization создана из origin.%ESC%[0m
-    ) else (
-        echo   %ESC%[33m       Создаём из текущей ветки...%ESC%[0m
-        git checkout -b ru-localization
-        git push -u origin ru-localization
-        echo   %ESC%[1;32m  +   Ветка ru-localization создана и запушена.%ESC%[0m
-    )
-) else (
-    echo   %ESC%[2m       Локальная ветка ru-localization существует.%ESC%[0m
-)
-
-REM ============================================================================
-REM   Проверяем ветку на GitHub (если локальная есть, но не запушена)
-REM ============================================================================
-git show-ref --verify --quiet refs/remotes/origin/ru-localization
-if !errorlevel! neq 0 (
-    echo.
-    echo   %ESC%[1;33m.   Ветка ru-localization не найдена на GitHub.%ESC%[0m
-    echo   %ESC%[33m       Пушим...%ESC%[0m
-    git push -u origin ru-localization
-    echo   %ESC%[1;32m  +   Ветка запушена на GitHub.%ESC%[0m
-) else (
-    echo   %ESC%[2m       Ветка ru-localization на GitHub.%ESC%[0m
-)
 
 echo.
 echo   %ESC%[1;33m[2/3]%ESC%[0m %ESC%[1mПереключение на ru-localization...%ESC%[0m
@@ -169,17 +102,12 @@ git checkout ru-localization
 echo   %ESC%[1;32m  +   На ветке ru-localization.%ESC%[0m
 
 echo.
-echo   %ESC%[1;33m[3/3]%ESC%[0m %ESC%[1mСлияние origin/main - ru-localization...%ESC%[0m
+echo   %ESC%[1;33m[3/3]%ESC%[0m %ESC%[1mСлияние origin/main → ru-localization...%ESC%[0m
 git merge origin/main --no-edit
 
 if !errorlevel! neq 0 (
-    echo.
     echo   %ESC%[1;31m[КОНФЛИКТ] Требуется ручное разрешение.%ESC%[0m
     echo   %ESC%[33m       Откройте репозиторий в VS 2022 и разрешите конфликты.%ESC%[0m
-    echo   %ESC%[33m       После разрешения:%ESC%[0m
-    echo   %ESC%[33m       git add .%ESC%[0m
-    echo   %ESC%[33m       git commit -m "Merge upstream updates"%ESC%[0m
-    echo   %ESC%[33m       git push origin ru-localization%ESC%[0m
     pause
     goto error_exit
 )
@@ -187,11 +115,11 @@ if !errorlevel! neq 0 (
 echo   %ESC%[1;32m  +   Слияние завершено без конфликтов.%ESC%[0m
 
 echo.
-echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
+echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
 echo   %ESC%[1;32mРепозиторий обновлён.%ESC%[0m
 echo   %ESC%[2m       Ветка: ru-localization%ESC%[0m
-echo   %ESC%[2m       origin/main: актуален (workflow обновляет)%ESC%[0m
-echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
+echo   %ESC%[2m       origin/main: актуален (синхронизирован workflow)%ESC%[0m
+echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
 echo.
 
 goto success_exit
@@ -207,59 +135,32 @@ echo   %ESC%[2m       ~100 МБ (исходный код)%ESC%[0m
 if exist "%REPO_DIR%" rmdir /s /q "%REPO_DIR%"
 mkdir "%REPO_DIR%" 2>nul
 
-git clone --depth 1 https://github.com/MRafStudio/ACE-Step-1.5.git "%REPO_DIR%"
+git clone https://github.com/MRafStudio/ACE-Step-1.5.git "%REPO_DIR%"
 if !errorlevel! neq 0 (
     echo   %ESC%[1;31m[ОШИБКА] Не удалось клонировать репозиторий.%ESC%[0m
     goto error_exit
 )
 
-echo   %ESC%[1;32m  +   Репозиторий клонирован (main).%ESC%[0m
+echo   %ESC%[1;32m  +   Репозиторий клонирован.%ESC%[0m
 
 cd /d "%REPO_DIR%"
 
-REM ============================================================================
-REM   Подтягиваем все ветки (важно для ru-localization)
-REM ============================================================================
 echo.
-echo   %ESC%[2m       Подтягиваем все ветки с origin...%ESC%[0m
-git fetch origin --unshallow 2>nul
-git fetch origin
-git branch -r >nul 2>nul
-echo   %ESC%[2m       Ветки на origin:%ESC%[0m
-git branch -r
+echo   %ESC%[1;33m[2/2]%ESC%[0m %ESC%[1mСоздание рабочей ветки ru-localization...%ESC%[0m
+git checkout -b ru-localization origin/main
+git push -u origin ru-localization
 
-echo.
-echo   %ESC%[1;33m[2/2]%ESC%[0m %ESC%[1mНастройка upstream и переключение на ru-localization...%ESC%[0m
-git remote add upstream https://github.com/ace-step/ACE-Step-1.5.git
-
-REM ============================================================================
-REM   Проверяем ru-localization на GitHub (после полного fetch)
-REM ============================================================================
-git show-ref --verify --quiet refs/remotes/origin/ru-localization
-if !errorlevel! equ 0 (
-    echo   %ESC%[2m       Ветка ru-localization найдена на GitHub.%ESC%[0m
-    git checkout -b ru-localization origin/ru-localization
-    echo   %ESC%[1;32m  +   Переключено на ru-localization ^(с GitHub^).%ESC%[0m
-) else (
-    echo   %ESC%[2m       Ветка ru-localization не найдена на GitHub, создаём локально...%ESC%[0m
-    git checkout -b ru-localization
-    git push -u origin ru-localization
-    echo   %ESC%[1;32m  +   Ветка ru-localization создана и запушена.%ESC%[0m
-)
-
-echo.
-echo   %ESC%[1;32m  +   Upstream настроен.%ESC%[0m
+echo   %ESC%[1;32m  +   Ветка ru-localization создана и запушена.%ESC%[0m
 echo   %ESC%[2m       origin:  https://github.com/MRafStudio/ACE-Step-1.5.git%ESC%[0m
-echo   %ESC%[2m       upstream: https://github.com/ace-step/ACE-Step-1.5.git%ESC%[0m
 echo   %ESC%[2m       Ветка: ru-localization (рабочая)%ESC%[0m
 echo   %ESC%[2m       main: автообновление от workflow%ESC%[0m
 
 echo.
-echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
+echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
 echo   %ESC%[1;32mКлонирование завершено.%ESC%[0m
 echo   %ESC%[2m       Рабочая ветка: ru-localization%ESC%[0m
 echo   %ESC%[2m       Не забудьте: все правки коммить в ru-localization.%ESC%[0m
-echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
+echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
 echo.
 
 goto success_exit
