@@ -13,7 +13,7 @@ for /f %%a in ('powershell -Command "Write-Host ([char]27) -NoNewline"') do set 
 
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "REPO_DIR=%ROOT_DIR%\repo"
-set "PYTHON_DIR=%ROOT_DIR%\python-3.11.9"
+set "PYTHON_DIR=%ROOT_DIR%\python-3.12.10"
 set "PYTHON_EXE=%PYTHON_DIR%\python.exe"
 
 REM ============================================================================
@@ -35,7 +35,7 @@ if not exist "%HOME%" mkdir "%HOME%" 2>nul
 cls
 echo.
 echo  %ESC%[1;36m╔══════════════════════════════════════════════════════════════════════════════╗%ESC%[0m
-echo  %ESC%[1;36m║%ESC%[0m                         %ESC%[1;37mAceStep-1.5%ESC%[0m  —  %ESC%[1;33mAMD ROCm%ESC%[0m                           %ESC%[1;36m║%ESC%[0m
+echo  %ESC%[1;36m║%ESC%[0m                           %ESC%[1;37mAceStep-1.5%ESC%[0m  —  %ESC%[1;33mAMD ROCm%ESC%[0m                           %ESC%[1;36m║%ESC%[0m
 echo  %ESC%[1;36m╚══════════════════════════════════════════════════════════════════════════════╝%ESC%[0m
 echo.
 
@@ -56,7 +56,7 @@ if not exist "%REPO_DIR%\requirements.txt" (
 REM ============================================================================
 REM   venv
 REM ============================================================================
-echo   %ESC%[1;33m[1/4]%ESC%[0m %ESC%[1mСоздание venv...%ESC%[0m
+echo   %ESC%[1;33m[1/5]%ESC%[0m %ESC%[1mСоздание venv...%ESC%[0m
 cd /d "%REPO_DIR%"
 if not exist ".venv" (
     "%PYTHON_EXE%" -m venv .venv
@@ -78,19 +78,49 @@ REM ============================================================================
 REM   pip
 REM ============================================================================
 echo.
-echo   %ESC%[1;33m[2/4]%ESC%[0m %ESC%[1mОбновление pip...%ESC%[0m
-"%VENV_PYTHON%" -m pip install --upgrade pip --quiet
+echo   %ESC%[1;33m[2/5]%ESC%[0m %ESC%[1mОбновление pip...%ESC%[0m
+"%VENV_PYTHON%" -m pip install --upgrade pip
 echo   %ESC%[1;32m  +   pip готов.%ESC%[0m
+
+REM ============================================================================
+REM   ROCm SDK
+REM ============================================================================
+echo.
+echo   %ESC%[1;33m[3/5]%ESC%[0m %ESC%[1mУстановка ROCm SDK 7.2.1...%ESC%[0m
+
+REM Проверка: уже установлена нужная версия?
+"%VENV_PIP%" show rocm-sdk-core 2>nul | findstr "Version: 7.2.1" >nul
+if !errorlevel! equ 0 (
+    echo   %ESC%[1;32m  +   ROCm SDK 7.2.1 уже установлен.%ESC%[0m
+    goto rocm_done
+)
+
+echo   %ESC%[2m       Это может занять 5-10 минут...%ESC%[0m
+
+"%VENV_PIP%" install --no-cache-dir ^
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/rocm_sdk_core-7.2.1-py3-none-win_amd64.whl ^
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/rocm_sdk_devel-7.2.1-py3-none-win_amd64.whl ^
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/rocm_sdk_libraries_custom-7.2.1-py3-none-win_amd64.whl ^
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/rocm-7.2.1.tar.gz
+
+if !errorlevel! neq 0 (
+    echo   %ESC%[1;31m[ОШИБКА] ROCm SDK не установился.%ESC%[0m
+    if "%AUTOCLOSE%"=="0" pause
+    popd
+    exit /b 1
+)
+echo   %ESC%[1;32m  +   ROCm SDK 7.2.1 установлен.%ESC%[0m
+
+:rocm_done
 
 REM ============================================================================
 REM   PyTorch ROCm
 REM ============================================================================
 echo.
-echo   %ESC%[1;33m[3/4]%ESC%[0m %ESC%[1mУстановка PyTorch ROCm...%ESC%[0m
-echo   %ESC%[2m       Источник: https://download.pytorch.org/whl/rocm6.2%ESC%[0m
+echo   %ESC%[1;33m[4/5]%ESC%[0m %ESC%[1mУстановка PyTorch ROCm...%ESC%[0m
 
-REM Проверка: уже установлена ROCm версия?
-"%VENV_PYTHON%" -c "import torch; import sys; v=torch.__version__; h=torch.version.hip if hasattr(torch.version, 'hip') else None; sys.exit(0 if (h and '2.' in v) else 1)" >nul 2>nul
+REM Проверка: уже установлена ROCm-версия PyTorch?
+"%VENV_PIP%" show torch 2>nul | findstr /I "rocm" >nul
 if !errorlevel! equ 0 (
     echo   %ESC%[1;32m  +   PyTorch ROCm уже установлен.%ESC%[0m
     goto pytorch_done
@@ -100,122 +130,38 @@ echo   %ESC%[2m       Загрузка ~2-3 GB, может занять 10-30 м
 echo   %ESC%[2m       Не закрывайте окно! При прерывании повторный запуск докачает из кэша.%ESC%[0m
 echo.
 
-REM Установка БЕЗ --quiet — видим прогресс
-"%VENV_PIP%" install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
+"%VENV_PIP%" install --no-cache-dir ^
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/torch-2.9.1%%2Brocm7.2.1-cp312-cp312-win_amd64.whl ^
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/torchaudio-2.9.1%%2Brocm7.2.1-cp312-cp312-win_amd64.whl ^
+    https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1/torchvision-0.24.1%%2Brocm7.2.1-cp312-cp312-win_amd64.whl
 
 if !errorlevel! neq 0 (
-    echo.
     echo   %ESC%[1;31m[ОШИБКА] PyTorch ROCm не установился.%ESC%[0m
-    echo   %ESC%[33m       Возможные причины:%ESC%[0m
-    echo   %ESC%[33m       1. Прервалась загрузка — запустите повторно, докачает из кэша%ESC%[0m
-    echo   %ESC%[33m       2. Нет интернета%ESC%[0m
-    echo   %ESC%[33m       3. ROCm не поддерживает вашу карту%ESC%[0m
-    if "%AUTOCLOSE%"=="0" pause
-    popd
-    exit /b 1
+    ...
 )
 echo   %ESC%[1;32m  +   PyTorch ROCm установлен.%ESC%[0m
 
 :pytorch_done
 
 REM ============================================================================
-REM   Зависимости ACE-Step
+REM   Зависимости ACE-Step (без flash_attn — только для NVIDIA)
 REM ============================================================================
 echo.
-echo   %ESC%[1;33m[4/4]%ESC%[0m %ESC%[1mУстановка зависимостей ACE-Step...%ESC%[0m
+echo   %ESC%[1;33m[5/5]%ESC%[0m %ESC%[1mУстановка зависимостей ACE-Step...%ESC%[0m
 echo   %ESC%[2m       Это может занять 5-15 минут...%ESC%[0m
 
-REM Сначала ставим всё кроме flash_attn
-echo   %ESC%[2m       Установка основных зависимостей...%ESC%[0m
-findstr /V /I "flash-attn" "%REPO_DIR%\requirements.txt" > "%TEMP%\requirements_base.txt"
-"%VENV_PIP%" install -r "%TEMP%\requirements_base.txt"
+REM Фильтруем flash-attn из requirements.txt — он NVIDIA-специфичен
+findstr /V /I "flash-attn" "%REPO_DIR%\requirements.txt" > "%TEMP%\requirements_amd.txt"
+"%VENV_PIP%" install -r "%TEMP%\requirements_amd.txt"
 if !errorlevel! neq 0 (
-    echo   %ESC%[1;31m[ОШИБКА] Основные зависимости не установились.%ESC%[0m
-    del "%TEMP%\requirements_base.txt" 2>nul
+    echo   %ESC%[1;31m[ОШИБКА] Зависимости не установились.%ESC%[0m
+    del "%TEMP%\requirements_amd.txt" 2>nul
     if "%AUTOCLOSE%"=="0" pause
     popd
     exit /b 1
 )
-echo   %ESC%[1;32m  +   Основные зависимости установлены.%ESC%[0m
-del "%TEMP%\requirements_base.txt" 2>nul
-
-REM ============================================================================
-REM   flash_attn отдельно (GitHub Releases — curl с User-Agent)
-REM ============================================================================
-echo.
-echo   %ESC%[1;33m→ Установка flash_attn...%ESC%[0m
-
-REM Проверяем, уже установлен?
-"%VENV_PYTHON%" -c "import flash_attn" >nul 2>nul
-if !errorlevel! equ 0 (
-    echo   %ESC%[1;32m  +   flash_attn уже установлен.%ESC%[0m
-    goto flash_done
-)
-
-REM Парсим URL из requirements.txt
-set "FLASH_URL="
-for /f "tokens=*" %%a in ('findstr /I "flash-attn" "%REPO_DIR%\requirements.txt"') do (
-    set "FLASH_RAW=%%a"
-    set "FLASH_URL=!FLASH_RAW:flash-attn @ =!"
-    for /f "delims=;" %%b in ("!FLASH_URL!") do set "FLASH_URL=%%b"
-    set "FLASH_URL=!FLASH_URL: =!"
-    goto flash_url_found
-)
-:flash_url_found
-
-if "!FLASH_URL!"=="" (
-    echo   %ESC%[1;33m  ⚠   URL flash_attn не найден в requirements.txt%ESC%[0m
-    goto flash_done
-)
-
-echo   %ESC%[2m       Загрузка через curl...%ESC%[0m
-set "USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-
-REM Извлекаем имя файла из URL (через PowerShell — универсально)
-for /f "usebackq" %%n in (`powershell -NoProfile -Command "[System.IO.Path]::GetFileName('!FLASH_URL!')"`) do (
-    set "FLASH_NAME=%%n"
-)
-
-if "!FLASH_NAME!"=="" (
-    echo   %ESC%[1;31m  -   Не удалось определить имя файла из URL.%ESC%[0m
-    goto flash_done
-)
-
-echo   %ESC%[2m       Файл: !FLASH_NAME!%ESC%[0m
-
-curl -L -A "%USER_AGENT%" -o "!TEMP!\!FLASH_NAME!" "!FLASH_URL!" --connect-timeout 30 --max-time 600 --progress-bar
-if !errorlevel! neq 0 (
-    echo   %ESC%[1;31m  -   Не удалось загрузить flash_attn.%ESC%[0m
-    echo   %ESC%[33m       Попробуйте с VPN или скачайте вручную:%ESC%[0m
-    echo   %ESC%[33m       !FLASH_URL!%ESC%[0m
-    goto flash_done
-)
-
-REM Проверяем, файл скачался
-if not exist "!TEMP!\!FLASH_NAME!" (
-    echo   %ESC%[1;31m  -   Файл не создан.%ESC%[0m
-    goto flash_done
-)
-for %%F in ("!TEMP!\!FLASH_NAME!") do set "FLASH_SIZE=%%~zF"
-if !FLASH_SIZE! lss 1000000 (
-    echo   %ESC%[1;31m  -   Файл слишком маленький.%ESC%[0m
-    del "!TEMP!\!FLASH_NAME!" 2>nul
-    goto flash_done
-)
-
-echo   %ESC%[1;32m  +   Загружено (!FLASH_SIZE! байт).%ESC%[0m
-echo   %ESC%[1;33m→ Установка из файла...%ESC%[0m
-
-"%VENV_PIP%" install "!TEMP!\!FLASH_NAME!" --no-deps
-if !errorlevel! equ 0 (
-    echo   %ESC%[1;32m  +   flash_attn установлен.%ESC%[0m
-) else (
-    echo   %ESC%[1;31m[ОШИБКА] Установка flash_attn не удалась.%ESC%[0m
-)
-
-del "!TEMP!\!FLASH_NAME!" 2>nul
-
-:flash_done
+echo   %ESC%[1;32m  +   Зависимости ACE-Step установлены.%ESC%[0m
+del "%TEMP%\requirements_amd.txt" 2>nul
 
 REM ============================================================================
 REM   Проверка

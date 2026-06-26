@@ -175,7 +175,7 @@ echo   %ESC%[1;33m⚠  Риск: конфликты слияния → ручн�
 echo.
 set "CONFIRM="
 set /p "CONFIRM=%ESC%[33mПродолжить? (y/n): %ESC%[0m"
-if /I "%CONFIRM%"=="y" call "%SCRIPTS_DIR%\Update-From-Upstream.bat" & goto dev_tools_menu
+if /I "%CONFIRM%"=="y" call "%SCRIPTS_DIR%\InstallOrUpdate-Repo.bat" & goto dev_tools_menu
 goto dev_tools_menu
 
 REM ============================================================================

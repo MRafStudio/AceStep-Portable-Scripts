@@ -14,7 +14,7 @@ set "ROOT_DIR=%ROOT_DIR:~0,-1%"
 set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
 set "REPO_DIR=%ROOT_DIR%\repo"
-set "PYTHON_DIR=%ROOT_DIR%\python-3.11.9"
+set "PYTHON_DIR=%ROOT_DIR%\python-3.12.10"
 set "MODELS_DIR=%ROOT_DIR%\models"
 set "DATA_DIR=%ROOT_DIR%\data"
 

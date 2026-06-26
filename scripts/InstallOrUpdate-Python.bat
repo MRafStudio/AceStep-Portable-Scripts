@@ -4,7 +4,7 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 REM ============================================================================
-REM   Python 3.11.9 Portable — установка / обновление
+REM   Python 3.12.10 Portable — установка / обновление
 REM ============================================================================
 
 title Python Portable — Установка / Обновление
@@ -16,7 +16,7 @@ REM ============================================================================
 REM   Определение путей (корень проекта = уровень выше scripts\)
 REM ============================================================================
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
-set "PYTHON_DIR=%ROOT_DIR%\python-3.11.9"
+set "PYTHON_DIR=%ROOT_DIR%\python-3.12.10"
 set "PYTHON_EXE=%PYTHON_DIR%\python.exe"
 
 REM ============================================================================
@@ -66,7 +66,7 @@ cls
 echo.
 echo  %ESC%[1;36m################################################################################%ESC%[0m
 echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
-echo  %ESC%[1;36m##%ESC%[0m           %ESC%[1;37mPython 3.11.9 Portable%ESC%[0m   —   %ESC%[1;33mУстановка / Обновление%ESC%[0m              %ESC%[1;36m##%ESC%[0m
+echo  %ESC%[1;36m##%ESC%[0m           %ESC%[1;37mPython 3.12.10 Portable%ESC%[0m   —   %ESC%[1;33mУстановка / Обновление%ESC%[0m             %ESC%[1;36m##%ESC%[0m
 echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
 echo  %ESC%[1;36m################################################################################%ESC%[0m
 echo.
@@ -88,7 +88,25 @@ echo.
 REM ============================================================================
 REM   Проверка установленного Python
 REM ============================================================================
+set "PYTHON_OK=0"
+
 if exist "%PYTHON_EXE%" (
+    REM python.exe работает?
+    "%PYTHON_EXE%" --version >nul 2>nul
+    if !errorlevel! equ 0 (
+        REM pip доступен?
+        "%PYTHON_EXE%" -m pip --version >nul 2>nul
+        if !errorlevel! equ 0 (
+            set "PYTHON_OK=1"
+        ) else (
+            echo   %ESC%[1;33m  .   Python найден, но pip не работает. Переустановка...%ESC%[0m
+        )
+    ) else (
+        echo   %ESC%[1;33m  .   Python найден, но не работает. Переустановка...%ESC%[0m
+    )
+)
+
+if "!PYTHON_OK!"=="1" (
     echo   %ESC%[1;32m  +   Python уже установлен.%ESC%[0m
     set /p "=%ESC%[2m       Версия: %ESC%[0m" <nul
     "%PYTHON_EXE%" --version 2>nul
@@ -96,13 +114,22 @@ if exist "%PYTHON_EXE%" (
     goto check_hf
 )
 
-echo   %ESC%[1;33m[1/3]%ESC%[0m %ESC%[1mЗагрузка Python 3.11.9...%ESC%[0m
-echo   %ESC%[2m       ~180 МБ, подождите...%ESC%[0m
+REM Если дошли сюда — Python битый или не установлен, удаляем и ставим заново
+if exist "%PYTHON_DIR%" (
+    echo   %ESC%[1;33m  .   Удаление повреждённой установки...%ESC%[0m
+    rmdir /s /q "%PYTHON_DIR%"
+)
+
+echo   %ESC%[1;33m[1/3]%ESC%[0m %ESC%[1mЗагрузка Python 3.12.10...%ESC%[0m
+echo   %ESC%[2m       ~32 МБ, подождите...%ESC%[0m
+
+REM Удаляем битый zip если есть
+if exist "%TEMP%\python-3.12.10-amd64.zip" del "%TEMP%\python-3.12.10-amd64.zip" 2>nul
 
 REM ============================================================================
 REM   Загрузка с изоляцией TEMP
 REM ============================================================================
-curl -L -o "%TEMP%\python-3.11.9-amd64.zip" "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.zip"
+curl -L -o "%TEMP%\python-3.11.9-amd64.zip" "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.zip"
 if !errorlevel! neq 0 (
     echo   %ESC%[1;31m[ОШИБКА] Не удалось загрузить Python.%ESC%[0m
     if "%AUTOCLOSE%"=="0" pause
@@ -242,7 +269,7 @@ del "%PS_WRAPPER%" 2>nul
 
 echo.
 echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
-echo   %ESC%[1;32mPython 3.11.9 успешно установлен!%ESC%[0m
+echo   %ESC%[1;32mPython 3.12.10 успешно установлен!%ESC%[0m
 echo   %ESC%[2m  Путь: %PYTHON_DIR%%ESC%[0m
 echo   %ESC%[2m  Изоляция: %DATA_DIR%%ESC%[0m
 echo   %ESC%[2m  hf.exe: готов к загрузке моделей%ESC%[0m

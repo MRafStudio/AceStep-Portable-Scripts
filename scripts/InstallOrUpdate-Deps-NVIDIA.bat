@@ -13,7 +13,7 @@ for /f %%a in ('powershell -Command "Write-Host ([char]27) -NoNewline"') do set 
 
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "REPO_DIR=%ROOT_DIR%\repo"
-set "PYTHON_DIR=%ROOT_DIR%\python-3.11.9"
+set "PYTHON_DIR=%ROOT_DIR%\python-3.12.10"
 set "PYTHON_EXE=%PYTHON_DIR%\python.exe"
 
 REM ============================================================================

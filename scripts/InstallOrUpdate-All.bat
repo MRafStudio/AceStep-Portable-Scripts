@@ -141,7 +141,7 @@ echo.
 echo  %ESC%[1;32m  +   Все компоненты успешно установлены / обновлены.%ESC%[0m
 echo.
 echo   %ESC%[1;33mУстановленные компоненты:%ESC%[0m
-echo     %ESC%[2m- Python 3.11.9 (portable)%ESC%[0m
+echo     %ESC%[2m- Python 3.12.10 (portable)%ESC%[0m
 echo     %ESC%[2m- Репозиторий ACE-Step-1.5 (форк MRafStudio)%ESC%[0m
 echo     %ESC%[2m- PyTorch CUDA 12.8 + зависимости%ESC%[0m
 echo     %ESC%[2m- Модели (по выбору)%ESC%[0m
