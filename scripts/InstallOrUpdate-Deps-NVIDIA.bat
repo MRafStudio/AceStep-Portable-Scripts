@@ -266,6 +266,21 @@ if "!FLASH_URL!"=="" (
     goto flash_done
 )
 
+REM ============================================================================
+REM   Адаптация URL для Python 3.12 + CUDA 12.8 + Windows (kingbri1 fork)
+REM ============================================================================
+for /f "tokens=2" %%v in ('"%VENV_PYTHON%" --version') do set "PY_VER=%%v"
+
+echo !PY_VER! | findstr "3.12" >nul
+if !errorlevel! equ 0 (
+    set "FLASH_URL=!FLASH_URL:cp311-cp311=cp312-cp312!"
+)
+
+echo !FLASH_URL! | findstr "cu128torch2.7.1" >nul
+if !errorlevel! equ 0 (
+    set "FLASH_URL=https://github.com/kingbri1/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu128torch2.7.0cxx11abiFALSE-cp312-cp312-win_amd64.whl"
+)
+
 echo   %ESC%[2m       Загрузка через curl...%ESC%[0m
 set "USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
