@@ -144,14 +144,17 @@ echo   %ESC%[1;32m  +   PyTorch ROCm установлен.%ESC%[0m
 :pytorch_done
 
 REM ============================================================================
-REM   Зависимости ACE-Step (без flash_attn — только для NVIDIA)
+REM   Зависимости ACE-Step (без flash_attn и torch — уже установлены)
 REM ============================================================================
 echo.
 echo   %ESC%[1;33m[5/5]%ESC%[0m %ESC%[1mУстановка зависимостей ACE-Step...%ESC%[0m
 echo   %ESC%[2m       Это может занять 5-15 минут...%ESC%[0m
 
-REM Фильтруем flash-attn из requirements.txt — он NVIDIA-специфичен
-findstr /V /I "flash-attn" "%REPO_DIR%\requirements.txt" > "%TEMP%\requirements_amd.txt"
+REM Фильтруем из requirements.txt:
+REM   - flash-attn (NVIDIA-only)
+REM   - torch, torchvision, torchaudio (уже ROCm в [4/5])
+findstr /V /I "flash-attn" "%REPO_DIR%\requirements.txt" | findstr /V /I /R "^torch[audio]*== ^torchvision==" > "%TEMP%\requirements_amd.txt"
+
 "%VENV_PIP%" install -r "%TEMP%\requirements_amd.txt"
 if !errorlevel! neq 0 (
     echo   %ESC%[1;31m[ОШИБКА] Зависимости не установились.%ESC%[0m
