@@ -89,7 +89,7 @@ REM ============================================================================
 REM   Проверка установленного Python
 REM ============================================================================
 if exist "%PYTHON_EXE%" (
-    echo   %ESC%[32m  ✔   Python уже установлен.%ESC%[0m
+    echo   %ESC%[1;32m  +   Python уже установлен.%ESC%[0m
     set /p "=%ESC%[2m       Версия: %ESC%[0m" <nul
     "%PYTHON_EXE%" --version 2>nul
     echo.
@@ -97,20 +97,19 @@ if exist "%PYTHON_EXE%" (
 )
 
 echo   %ESC%[1;33m[1/3]%ESC%[0m %ESC%[1mЗагрузка Python 3.11.9...%ESC%[0m
-echo   %ESC%[2m       ~180 МБ, первая загрузка может занять время%ESC%[0m
+echo   %ESC%[2m       ~180 МБ, подождите...%ESC%[0m
 
 REM ============================================================================
 REM   Загрузка с изоляцией TEMP
 REM ============================================================================
-curl -# -L -o "%TEMP%\python-3.11.9-amd64.zip" "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.zip"
+curl -L -o "%TEMP%\python-3.11.9-amd64.zip" "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.zip"
 if !errorlevel! neq 0 (
-    echo   %ESC%[1;31m^[ОШИБКА^] Не удалось загрузить Python.%ESC%[0m
+    echo   %ESC%[1;31m[ОШИБКА] Не удалось загрузить Python.%ESC%[0m
     if "%AUTOCLOSE%"=="0" pause
     exit /b 1
 )
 
-echo   %ESC%[32m  ✔   Загрузка завершена.%ESC%[0m
-echo.
+echo   %ESC%[1;32m  +   Загрузка завершена.%ESC%[0m
 echo   %ESC%[1;33m[2/3]%ESC%[0m %ESC%[1mРаспаковка...%ESC%[0m
 
 if exist "%PYTHON_DIR%" rmdir /s /q "%PYTHON_DIR%"
@@ -184,7 +183,7 @@ echo.
 
 :check_hf
 REM ============================================================================
-REM   Установка / обновление huggingface-hub (с полной изоляцией)
+REM   Установка / обновление huggingface-hub
 REM ============================================================================
 echo   %ESC%[1;33m[3/3]%ESC%[0m %ESC%[1mПроверка hf.exe...%ESC%[0m
 
@@ -193,10 +192,10 @@ set "PATH=%PYTHON_DIR%;%PYTHON_DIR%\Scripts;%PATH%"
 
 where hf >nul 2>nul
 if !errorlevel! neq 0 (
-    echo   %ESC%[33m  →   Установка huggingface-hub...%ESC%[0m
+    echo   %ESC%[1;33m  →   Установка huggingface-hub...%ESC%[0m
     
     REM ============================================================================
-    REM   ПРИНУДИТЕЛЬНАЯ изоляция для pip (перед каждой командой pip!)
+    REM   Изоляция для pip
     REM ============================================================================
     set "TEMP=%DATA_DIR%\temp"
     set "TMP=%DATA_DIR%\temp"
@@ -205,21 +204,20 @@ if !errorlevel! neq 0 (
     set "HOME=%DATA_DIR%\home"
     set "USERPROFILE=%DATA_DIR%\home"
     set "PIP_CACHE_DIR=%DATA_DIR%\pip-cache"
-    set "PYTHONUSERBASE=%DATA_DIR%\python-user"
     
-    "%PYTHON_EXE%" -m pip install huggingface-hub --quiet --no-warn-script-location --cache-dir "%PIP_CACHE_DIR%"
+    "%PYTHON_EXE%" -m pip install huggingface-hub --no-warn-script-location --cache-dir "%PIP_CACHE_DIR%"
     
     if !errorlevel! neq 0 (
-        echo   %ESC%[1;31m^[ОШИБКА^] Не удалось установить huggingface-hub.%ESC%[0m
+        echo   %ESC%[1;31m[ОШИБКА] Не удалось установить huggingface-hub.%ESC%[0m
         echo   %ESC%[33m       Загрузка моделей будет недоступна.%ESC%[0m
     ) else (
-        echo   %ESC%[32m  ✔   hf.exe установлен.%ESC%[0m
+        echo   %ESC%[1;32m  ✔   hf.exe установлен.%ESC%[0m
     )
 ) else (
-    echo   %ESC%[33m  →   Обновление huggingface-hub...%ESC%[0m
+    echo   %ESC%[1;33m  →   Обновление huggingface-hub...%ESC%[0m
     
     REM ============================================================================
-    REM   ИСПРАВЛЕНИЕ: Всегда обновляем hf.exe до последней версии (с изоляцией)
+    REM   Изоляция для pip
     REM ============================================================================
     set "TEMP=%DATA_DIR%\temp"
     set "TMP=%DATA_DIR%\temp"
@@ -228,17 +226,15 @@ if !errorlevel! neq 0 (
     set "HOME=%DATA_DIR%\home"
     set "USERPROFILE=%DATA_DIR%\home"
     set "PIP_CACHE_DIR=%DATA_DIR%\pip-cache"
-    set "PYTHONUSERBASE=%DATA_DIR%\python-user"
     
-    "%PYTHON_EXE%" -m pip install --upgrade huggingface-hub --quiet --no-warn-script-location --cache-dir "%PIP_CACHE_DIR%"
+    "%PYTHON_EXE%" -m pip install --upgrade huggingface-hub --no-warn-script-location --cache-dir "%PIP_CACHE_DIR%"
     
     if !errorlevel! neq 0 (
         echo   %ESC%[1;33m  ⚠   Не удалось обновить huggingface-hub. Используется текущая версия.%ESC%[0m
     ) else (
-        echo   %ESC%[32m  ✔   hf.exe обновлён до последней версии.%ESC%[0m
+        echo   %ESC%[1;32m  ✔   hf.exe обновлён до последней версии.%ESC%[0m
     )
 )
-
 REM ============================================================================
 REM   Удаляем временный wrapper
 REM ============================================================================
