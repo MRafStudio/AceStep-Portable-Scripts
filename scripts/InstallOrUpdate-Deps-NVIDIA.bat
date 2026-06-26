@@ -9,7 +9,36 @@ if "%1"=="1" set "AUTOCLOSE=1"
 title AceStep-1.5 — NVIDIA CUDA
 pushd %~dp0..
 
-for /f %%a in ('powershell -Command "Write-Host ([char]27) -NoNewline"') do set "ESC=%%a"
+REM ============================================================================
+REM   Получение ESC через PowerShell
+REM ============================================================================
+for /f %%a in ('powershell -NoProfile -Command "Write-Host ([char]27) -NoNewline"') do set "ESC=%%a"
+
+goto :skip_smart_pause
+
+:smart_pause
+if not "%AUTOCLOSE%"=="1" (
+    pause
+    goto :eof
+)
+
+echo.
+echo   %ESC%[1;33m  →  Авто-продолжение через 5 сек...%ESC%[0m
+echo   %ESC%[2m       ^(нажмите любую клавишу для остановки^)%ESC%[0m
+
+REM timeout /t 5 /nobreak — ждёт 5 сек, но ЛЮБАЯ клавиша прерывает
+timeout /t 5 /nobreak >nul
+
+REM timeout возвращает errorlevel 1 если прерван клавишей, 0 если таймаут
+if errorlevel 1 (
+    echo.
+    echo   %ESC%[1;33m  Остановлено. Нажмите Enter для продолжения...%ESC%[0m
+    pause >nul
+)
+
+goto :eof
+
+:skip_smart_pause
 
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "REPO_DIR=%ROOT_DIR%\repo"
@@ -154,6 +183,7 @@ if exist "%CONFIG_FILE%" (
 REM ============================================================================
 REM   venv
 REM ============================================================================
+echo.
 echo   %ESC%[1;33m[1/4]%ESC%[0m %ESC%[1mСоздание venv...%ESC%[0m
 cd /d "%REPO_DIR%"
 if not exist ".venv" (
@@ -346,8 +376,7 @@ echo.
 echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
 echo   %ESC%[1;32mГотово: %ESC%[0m  %ESC%[2mPyTorch CUDA !CUDA_VER! установлен.%ESC%[0m
 echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
-echo.
 
-if "%AUTOCLOSE%"=="0" pause
+call :smart_pause
 popd
 exit /b 0

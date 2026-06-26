@@ -9,7 +9,7 @@ pushd %~dp0..
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
-set "PYTHON_DIR=%ROOT_DIR%\python-3.11.9"
+set "PYTHON_DIR=%ROOT_DIR%\python-3.12.10"
 set "REPO_DIR=%ROOT_DIR%\repo"
 set "MODELS_DIR=%ROOT_DIR%\models"
 
@@ -124,18 +124,17 @@ set "MODEL_STATUS=Скачать"
 set "MODEL_COLOR=%ESC%[1;33m"
 set "MODEL_INSTALLED=0"
 if exist "%MODELS_DIR%" (
-    REM Ищем любые файлы моделей (.safetensors, .bin, .pt, config.json)
     dir /s /b "%MODELS_DIR%\*.safetensors" >nul 2>nul
-    if !errorlevel! equ 0 set "MODEL_INSTALLED=1"
-    if !MODEL_INSTALLED! equ 0 (
+    if not errorlevel 1 set "MODEL_INSTALLED=1"
+    if %MODEL_INSTALLED% equ 0 (
         dir /s /b "%MODELS_DIR%\*.bin" >nul 2>nul
-        if !errorlevel! equ 0 set "MODEL_INSTALLED=1"
+        if not errorlevel 1 set "MODEL_INSTALLED=1"
     )
-    if !MODEL_INSTALLED! equ 0 (
+    if %MODEL_INSTALLED% equ 0 (
         dir /s /b "%MODELS_DIR%\config.json" >nul 2>nul
-        if !errorlevel! equ 0 set "MODEL_INSTALLED=1"
+        if not errorlevel 1 set "MODEL_INSTALLED=1"
     )
-    if !MODEL_INSTALLED! equ 1 (
+    if %MODEL_INSTALLED% equ 1 (
         set "MODEL_STATUS=Добавить"
         set "MODEL_COLOR=%ESC%[1;32m"
     )

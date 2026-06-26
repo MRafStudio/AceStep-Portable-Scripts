@@ -9,6 +9,37 @@ if "%1"=="1" set "AUTOCLOSE=1"
 title ACE-Step-1.5 — Клонирование / Обновление репозитория
 
 REM ============================================================================
+REM   Получение ESC через PowerShell
+REM ============================================================================
+for /f %%a in ('powershell -NoProfile -Command "Write-Host ([char]27) -NoNewline"') do set "ESC=%%a"
+
+goto :skip_smart_pause
+
+:smart_pause
+if not "%AUTOCLOSE%"=="1" (
+    pause
+    goto :eof
+)
+
+echo.
+echo   %ESC%[1;33m  →  Авто-продолжение через 5 сек...%ESC%[0m
+echo   %ESC%[2m       ^(нажмите любую клавишу для остановки^)%ESC%[0m
+
+REM timeout /t 5 /nobreak — ждёт 5 сек, но ЛЮБАЯ клавиша прерывает
+timeout /t 5 /nobreak >nul
+
+REM timeout возвращает errorlevel 1 если прерван клавишей, 0 если таймаут
+if errorlevel 1 (
+    echo.
+    echo   %ESC%[1;33m  Остановлено. Нажмите Enter для продолжения...%ESC%[0m
+    pause >nul
+)
+
+goto :eof
+
+:skip_smart_pause
+
+REM ============================================================================
 REM   Определение путей
 REM ============================================================================
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
@@ -25,23 +56,6 @@ set "USERPROFILE=%DATA_DIR%\home"
 if not exist "%DATA_DIR%" mkdir "%DATA_DIR%" 2>nul
 if not exist "%TEMP%" mkdir "%TEMP%" 2>nul
 if not exist "%HOME%" mkdir "%HOME%" 2>nul
-
-REM ============================================================================
-REM   PowerShell wrapper (изоляция)
-REM ============================================================================
-set "PS_WRAPPER=%TEMP%\ps_wrapper.bat"
-(
-    echo @echo off
-    echo set "LOCALAPPDATA=%DATA_DIR%\localappdata"
-    echo set "APPDATA=%DATA_DIR%\appdata"
-    echo set "TEMP=%TEMP%"
-    echo set "TMP=%TMP%"
-    echo set "HOME=%HOME%"
-    echo set "USERPROFILE=%USERPROFILE%"
-    echo powershell -NoProfile -NonInteractive %%*
-) > "%PS_WRAPPER%"
-
-for /f "usebackq" %%a in (`%PS_WRAPPER% -Command "Write-Host ([char]27) -NoNewline"`) do set "ESC=%%a"
 
 REM ============================================================================
 REM   Проверка глобального Git (ОБЯЗАТЕЛЬНО!)
@@ -107,7 +121,7 @@ git merge origin/main --no-edit
 
 if !errorlevel! neq 0 (
     echo   %ESC%[1;31m[КОНФЛИКТ] Требуется ручное разрешение.%ESC%[0m
-    echo   %ESC%[33m       Откройте репозиторий в VS 2022 и разрешите конфликты.%ESC%[0m
+    echo   %ESC%[33m       Откройте репозиторий в VS/VCode и разрешите конфликты.%ESC%[0m
     pause
     goto error_exit
 )
@@ -120,7 +134,6 @@ echo   %ESC%[1;32mРепозиторий обновлён.%ESC%[0m
 echo   %ESC%[2m       Ветка: ru-localization%ESC%[0m
 echo   %ESC%[2m       origin/main: актуален (синхронизирован workflow)%ESC%[0m
 echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
-echo.
 
 goto success_exit
 
@@ -161,7 +174,6 @@ echo   %ESC%[1;32mКлонирование завершено.%ESC%[0m
 echo   %ESC%[2m       Рабочая ветка: ru-localization%ESC%[0m
 echo   %ESC%[2m       Не забудьте: все правки коммить в ru-localization.%ESC%[0m
 echo  %ESC%[36m────────────────────────────────────────────────────────────────────────────────%ESC%[0m
-echo.
 
 goto success_exit
 
@@ -169,11 +181,9 @@ REM ============================================================================
 REM   ВЫХОДЫ
 REM ============================================================================
 :error_exit
-del "%PS_WRAPPER%" 2>nul
-if "%AUTOCLOSE%"=="0" pause
-exit /b 1
+call :smart_pause
+exit /b 0
 
 :success_exit
-del "%PS_WRAPPER%" 2>nul
-if "%AUTOCLOSE%"=="0" pause
+call :smart_pause
 exit /b 0

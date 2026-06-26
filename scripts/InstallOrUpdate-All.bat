@@ -12,6 +12,37 @@ if "%1"=="1" set "FIRSTSTART=1"
 title AceStep-1.5 Portable — Установка / Обновление всех компонентов
 pushd %~dp0..
 
+REM ============================================================================
+REM   Получение ESC через PowerShell
+REM ============================================================================
+for /f %%a in ('powershell -NoProfile -Command "Write-Host ([char]27) -NoNewline"') do set "ESC=%%a"
+
+goto :skip_smart_pause
+
+:smart_pause
+if not "%AUTOCLOSE%"=="1" (
+    pause
+    goto :eof
+)
+
+echo.
+echo   %ESC%[1;33m  →  Авто-продолжение через 5 сек...%ESC%[0m
+echo   %ESC%[2m       ^(нажмите любую клавишу для остановки^)%ESC%[0m
+
+REM timeout /t 5 /nobreak — ждёт 5 сек, но ЛЮБАЯ клавиша прерывает
+timeout /t 5 /nobreak >nul
+
+REM timeout возвращает errorlevel 1 если прерван клавишей, 0 если таймаут
+if errorlevel 1 (
+    echo.
+    echo   %ESC%[1;33m  Остановлено. Нажмите Enter для продолжения...%ESC%[0m
+    pause >nul
+)
+
+goto :eof
+
+:skip_smart_pause
+
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 
@@ -31,23 +62,6 @@ if not exist "%TEMP%" mkdir "%TEMP%" 2>nul
 if not exist "%APPDATA%" mkdir "%APPDATA%" 2>nul
 if not exist "%LOCALAPPDATA%" mkdir "%LOCALAPPDATA%" 2>nul
 if not exist "%HOME%" mkdir "%HOME%" 2>nul
-
-REM ============================================================================
-REM   PowerShell wrapper (изоляция)
-REM ============================================================================
-set "PS_WRAPPER=%TEMP%\ps_wrapper.bat"
-(
-    echo @echo off
-    echo set "LOCALAPPDATA=%DATA_DIR%\localappdata"
-    echo set "APPDATA=%DATA_DIR%\appdata"
-    echo set "TEMP=%TEMP%"
-    echo set "TMP=%TMP%"
-    echo set "HOME=%HOME%"
-    echo set "USERPROFILE=%USERPROFILE%"
-    echo powershell -NoProfile -NonInteractive %%*
-) > "%PS_WRAPPER%"
-
-for /f "usebackq" %%a in (`%PS_WRAPPER% -Command "Write-Host ([char]27) -NoNewline"`) do set "ESC=%%a"
 
 REM ============================================================================
 REM   Проверка Git (глобальный, обязательно!)
@@ -132,7 +146,7 @@ echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mСкачивание моделей...%ESC%[
 echo.
 call "%SCRIPTS_DIR%\InstallOrUpdate-Models.bat" 1
 if errorlevel 1 (
-    echo   %ESC%[1;33m.   Модели не скачались (можно скачать позже).%ESC%[0m
+    echo   %ESC%[1;33m.   Модели не скачались ^(можно скачать позже^).%ESC%[0m
     echo.
 )
 
@@ -149,11 +163,11 @@ echo.
 
 if "%FIRSTSTART%"=="1" (
     echo   %ESC%[1;33mТеперь можно запускать AceStep-1.5 через главное меню.%ESC%[0m
+    echo.
     pause
-    popd
-    exit /b 0
+	popd
+	exit /b 0
 )
 
-pause
 popd
 exit /b 0
