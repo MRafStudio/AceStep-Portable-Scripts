@@ -61,28 +61,14 @@ set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
 REM ============================================================================
-REM   Валидация модели
+REM   Валидация и маппинг через MapModel.bat
 REM ============================================================================
-set "VALID_MODEL=0"
-if /I "%CURRENT_MODEL%"=="base" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="turbo" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="xl-base" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="xl-sft" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
+call "%SCRIPTS_DIR%\MapModel.bat" "%CURRENT_MODEL%"
 
-if "!VALID_MODEL!"=="0" set "CURRENT_MODEL=turbo"
-if /I "%CURRENT_MODEL%"=="base" set "CURRENT_MODEL=turbo"
-
-REM ============================================================================
-REM   Маппинг: короткое имя → реальное имя папки
-REM ============================================================================
-if "%CURRENT_MODEL%"=="base"     set "REAL_MODEL=acestep-v15-base"
-if "%CURRENT_MODEL%"=="sft"      set "REAL_MODEL=acestep-v15-sft"
-if "%CURRENT_MODEL%"=="turbo"    set "REAL_MODEL=acestep-v15-turbo"
-if "%CURRENT_MODEL%"=="xl-base"  set "REAL_MODEL=acestep-v15-xl-base"
-if "%CURRENT_MODEL%"=="xl-sft"   set "REAL_MODEL=acestep-v15-xl-sft"
-if "%CURRENT_MODEL%"=="xl-turbo" set "REAL_MODEL=acestep-v15-xl-turbo"
+if "%REAL_MODEL%"=="acestep-v15-turbo" if not "%CURRENT_MODEL%"=="turbo" (
+    set "CURRENT_MODEL=turbo"
+    call "%SCRIPTS_DIR%\MapModel.bat" "turbo"
+)
 
 REM ============================================================================
 REM   Проверки
@@ -147,7 +133,7 @@ echo  %ESC%[1;36m##%ESC%[0m                %ESC%[1;37mAceStep-1.5%ESC%[0m   — 
 echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
 echo  %ESC%[1;36m################################################################################%ESC%[0m
 echo.
-echo   %ESC%[1;33mМодель DiT:%ESC%[0m %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%^)%ESC%[0m
+echo   %ESC%[1;33mМодель DiT:%ESC%[0m %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%, %MODEL_SIZE%, %MODEL_VRAM%, %MODEL_STEPS% шагов^)%ESC%[0m
 echo   %ESC%[1;33mLM модель:%ESC%[0m %ESC%[1;33m%LM_MODEL%%ESC%[0m
 echo   %ESC%[1;33mURL:%ESC%[0m %ESC%[1;37mhttp://127.0.0.1:7860%ESC%[0m
 echo   %ESC%[1;33mМодели:%ESC%[0m %ESC%[2mавто-загрузка в repo\checkpoints\%ESC%[0m
