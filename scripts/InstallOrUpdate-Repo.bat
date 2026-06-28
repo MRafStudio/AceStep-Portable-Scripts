@@ -6,6 +6,8 @@ setlocal enabledelayedexpansion
 set "AUTOCLOSE=0"
 if "%1"=="1" set "AUTOCLOSE=1"
 
+echo [DEBUG 1] AUTOCLOSE=%AUTOCLOSE%, param1=[%1]
+
 title ACE-Step-1.5 — Клонирование / Обновление репозитория
 
 REM ============================================================================
@@ -171,7 +173,7 @@ REM   ВЫХОДЫ
 REM ============================================================================
 :error_exit
 if "%AUTOCLOSE%"=="1" (
-    call "%~dp0SmartPause.bat" 5
+    call "%~dp0SmartPause.bat"
 ) else (
     pause
 )
