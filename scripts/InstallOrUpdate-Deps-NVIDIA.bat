@@ -44,6 +44,7 @@ for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "REPO_DIR=%ROOT_DIR%\repo"
 set "PYTHON_DIR=%ROOT_DIR%\python-3.12.10"
 set "PYTHON_EXE=%PYTHON_DIR%\python.exe"
+set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
 
 REM ============================================================================
 REM   Изоляция

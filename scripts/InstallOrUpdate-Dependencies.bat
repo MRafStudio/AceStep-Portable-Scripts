@@ -129,7 +129,7 @@ echo   %ESC%[1;31m  -   Видеокарта не определена!%ESC%[0m
 echo   %ESC%[1;31m[ОШИБКА] Требуется NVIDIA или AMD GPU.%ESC%[0m
 call :smart_pause
 popd
-exit /b 0
+exit /b 1
 
 :gpu_detected
 echo.

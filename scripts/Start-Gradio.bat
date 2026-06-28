@@ -16,7 +16,7 @@ set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
 set "REPO_DIR=%ROOT_DIR%\repo"
 set "MODELS_DIR=%ROOT_DIR%\models"
-set "PYTHON_DIR=%ROOT_DIR%\python-3.11.9"
+set "PYTHON_DIR=%ROOT_DIR%\python-3.12.10"
 
 REM ============================================================================
 REM   Изоляция данных
