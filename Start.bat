@@ -195,22 +195,21 @@ if exist "%REPO_DIR%\.venv\Lib\site-packages\torch" (
     echo     %ESC%[1;31m-  %ESC%[0m PyTorch + зависимости — не установлены
 )
 
-REM Модель
-set "MODEL_INSTALLED=0"
-if exist "%MODELS_DIR%\%CURRENT_MODEL%" (
-    dir /b "%MODELS_DIR%\%CURRENT_MODEL%\*.safetensors" >nul 2>nul
+REM Модель — проверяем только статус, не требуем для запуска
+set "MODEL_STATUS=%ESC%[1;33m%CURRENT_MODEL%%ESC%[0m"
+if exist "%REPO_DIR%\checkpoints" (
+    dir /b "%REPO_DIR%\checkpoints\acestep-v15-*" >nul 2>nul
     if !errorlevel! equ 0 (
-        echo     %ESC%[1;32m+  %ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m
-        set "MODEL_INSTALLED=1"
+        echo     %ESC%[1;32m+  %ESC%[0m Модель: %MODEL_STATUS% %ESC%[2m^(загружена^)%ESC%[0m
     ) else (
-        echo     %ESC%[1;31m-  %ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m— не скачана%ESC%[0m
+        echo     %ESC%[1;33m.  %ESC%[0m Модель: %MODEL_STATUS% %ESC%[2m^(авто-загрузка при запуске^)%ESC%[0m
     )
 ) else (
-    echo     %ESC%[1;31m-  %ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m— не скачана%ESC%[0m
+    echo     %ESC%[1;33m.  %ESC%[0m Модель: %MODEL_STATUS% %ESC%[2m^(авто-загрузка при запуске^)%ESC%[0m
 )
 
-REM Подсчёт
-set /a "INSTALLED_COUNT=!PYTHON_INSTALLED!+!REPO_INSTALLED!+!DEPS_INSTALLED!+!MODEL_INSTALLED!"
+REM Подсчёт — только 3 компонента (без модели)
+set /a "INSTALLED_COUNT=!PYTHON_INSTALLED!+!REPO_INSTALLED!+!DEPS_INSTALLED!"
 
 echo.
 echo   %ESC%[1;33mТекущие настройки:%ESC%[0m
@@ -224,7 +223,7 @@ echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1mНастройки%ESC%[0m %ESC%[2m(мод
 echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mИнструменты разработчика%ESC%[0m %ESC%[2m(Git, локализация, обновление)%ESC%[0m
 echo.
 
-if "!INSTALLED_COUNT!"=="4" (
+if "!INSTALLED_COUNT!"=="3" (
     echo   %ESC%[1;37m[*]%ESC%[0m %ESC%[1mЗапуск AceStep-1.5%ESC%[0m %ESC%[2m^(%LAUNCH_METHOD%^)%ESC%[0m
     echo     %ESC%[2m       http://127.0.0.1:7860%ESC%[0m
 ) else (
@@ -248,7 +247,7 @@ if "%choice%"=="0" goto exit
 goto menu
 
 :run
-if "!INSTALLED_COUNT!"=="4" (
+if "!INSTALLED_COUNT!"=="3" (
     cls
     echo.
     echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mЗапуск AceStep-1.5 ^(%LAUNCH_METHOD%^)...%ESC%[0m
