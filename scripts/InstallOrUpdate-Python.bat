@@ -13,32 +13,6 @@ REM   Получение ESC через PowerShell
 REM ============================================================================
 for /f %%a in ('powershell -NoProfile -Command "Write-Host ([char]27) -NoNewline"') do set "ESC=%%a"
 
-goto :skip_smart_pause
-
-:smart_pause
-if not "%AUTOCLOSE%"=="1" (
-    pause
-    goto :eof
-)
-
-echo.
-echo   %ESC%[1;33m  →  Авто-продолжение через 5 сек...%ESC%[0m
-echo   %ESC%[2m       ^(нажмите любую клавишу для остановки^)%ESC%[0m
-
-REM timeout /t 5 /nobreak — ждёт 5 сек, но ЛЮБАЯ клавиша прерывает
-timeout /t 5 /nobreak >nul
-
-REM timeout возвращает errorlevel 1 если прерван клавишей, 0 если таймаут
-if errorlevel 1 (
-    echo.
-    echo   %ESC%[1;33m  Остановлено. Нажмите Enter для продолжения...%ESC%[0m
-    pause >nul
-)
-
-goto :eof
-
-:skip_smart_pause
-
 REM ============================================================================
 REM   Определение путей (корень проекта = уровень выше scripts\)
 REM ============================================================================
@@ -138,7 +112,11 @@ REM ============================================================================
 curl -L -o "%TEMP%\python-3.12.10-amd64.zip" "https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.zip"
 if !errorlevel! neq 0 (
     echo   %ESC%[1;31m[ОШИБКА] Не удалось загрузить Python.%ESC%[0m
-    call :smart_pause
+    if "%AUTOCLOSE%"=="1" (
+        call "%~dp0SmartPause.bat" 5
+    ) else (
+        pause
+    )
     exit /b 1
 )
 
@@ -199,7 +177,11 @@ if !errorlevel! neq 0 (
     echo   %ESC%[1;31m[ОШИБКА] Не удалось распаковать архив!%ESC%[0m
     rmdir /s /q "%PYTHON_DIR%" 2>nul
     del "%TEMP%\python-3.12.10-amd64.zip" 2>nul
-    call :smart_pause
+    if "%AUTOCLOSE%"=="1" (
+        call "%~dp0SmartPause.bat" 5
+    ) else (
+        pause
+    )
     exit /b 1
 )
 
@@ -277,5 +259,9 @@ echo   %ESC%[2m  Изоляция: %DATA_DIR%%ESC%[0m
 echo   %ESC%[2m  hf.exe: готов к загрузке моделей%ESC%[0m
 echo  %ESC%[36m--------------------------------------------------------------------------------%ESC%[0m
 
-call :smart_pause
+if "%AUTOCLOSE%"=="1" (
+    call "%~dp0SmartPause.bat" 5
+) else (
+    pause
+)
 exit /b 0
