@@ -22,18 +22,14 @@ timeout /t 3 /nobreak >nul
 goto :eof
 
 REM ============================================================================
-REM   Валидация модели через метку (обход enabledelayedexpansion)
+REM   Валидация модели через MapModel.bat
 REM ============================================================================
 :validate_model
-set "VALID_MODEL=0"
-if /I "%CURRENT_MODEL%"=="base" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="turbo" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="xl-base" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="xl-sft" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
-if "%VALID_MODEL%"=="0" set "CURRENT_MODEL=turbo"
-if /I "%CURRENT_MODEL%"=="base" set "CURRENT_MODEL=turbo"
+call "%SCRIPTS_DIR%\MapModel.bat" "%CURRENT_MODEL%"
+if "%REAL_MODEL%"=="acestep-v15-turbo" if not "%CURRENT_MODEL%"=="turbo" (
+    set "CURRENT_MODEL=turbo"
+    call "%SCRIPTS_DIR%\MapModel.bat" "turbo"
+)
 goto :eof
 
 :menu
@@ -71,13 +67,6 @@ set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
 call :validate_model
 
-REM Маппинг для отображения DiT
-if "%CURRENT_MODEL%"=="turbo"    set "DISP_MODEL=acestep-v15-turbo"
-if "%CURRENT_MODEL%"=="sft"      set "DISP_MODEL=acestep-v15-sft"
-if "%CURRENT_MODEL%"=="xl-base"  set "DISP_MODEL=acestep-v15-xl-base"
-if "%CURRENT_MODEL%"=="xl-sft"   set "DISP_MODEL=acestep-v15-xl-sft"
-if "%CURRENT_MODEL%"=="xl-turbo" set "DISP_MODEL=acestep-v15-xl-turbo"
-
 REM Маппинг языка для отображения
 if "%LANGUAGE%"=="en" set "DISP_LANG=English"
 if "%LANGUAGE%"=="zh" set "DISP_LANG=中文"
@@ -95,7 +84,7 @@ if not defined DISP_LM set "DISP_LM=%LM_MODEL%"
 
 echo   %ESC%[1;33mТекущие настройки:%ESC%[0m
 echo.
-echo   %ESC%[1;37m[1]%ESC%[0m Модель DiT: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%DISP_MODEL%^)%ESC%[0m
+echo   %ESC%[1;37m[1]%ESC%[0m Модель DiT: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%, %MODEL_SIZE%, %MODEL_VRAM%, %MODEL_STEPS% шагов^)%ESC%[0m
 echo   %ESC%[1;37m[2]%ESC%[0m Автозапуск браузера: %ESC%[1;33m%AUTO_OPEN_BROWSER%%ESC%[0m
 echo   %ESC%[1;37m[3]%ESC%[0m Метод запуска: %ESC%[1;33m%LAUNCH_METHOD%%ESC%[0m
 echo   %ESC%[1;37m[4]%ESC%[0m Язык интерфейса: %ESC%[1;33m%DISP_LANG%%ESC%[0m

@@ -174,7 +174,7 @@ if !INSTALLED_COUNT!==0 (
     echo   %ESC%[1;37m[1]%ESC%[0m !PYTHON_COLOR!!PYTHON_STATUS! Python%ESC%[0m
     echo   %ESC%[1;37m[2]%ESC%[0m !REPO_COLOR!!REPO_STATUS! Репозиторий ACE-Step-1.5%ESC%[0m
     echo   %ESC%[1;37m[3]%ESC%[0m !DEPS_COLOR!!DEPS_STATUS! PyTorch + зависимости%ESC%[0m
-    echo   %ESC%[1;37m[4]%ESC%[0m !MODEL_COLOR!!MODEL_STATUS! Модели%ESC%[0m
+    echo   %ESC%[1;37m[4]%ESC%[0m !MODEL_COLOR!!MODEL_STATUS! Выбор модели%ESC%[0m
     echo.
     echo   %ESC%[1;37m[8]%ESC%[0m %ESC%[1mОбновить все компоненты%ESC%[0m
     echo.
@@ -239,7 +239,7 @@ cls
 echo.
 echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mЗапуск !MODEL_STATUS! Моделей...%ESC%[0m
 echo.
-call "%SCRIPTS_DIR%\InstallOrUpdate-Models.bat" 0
+call "%SCRIPTS_DIR%\ChoiceModels.bat" 0
 goto menu
 
 :exit

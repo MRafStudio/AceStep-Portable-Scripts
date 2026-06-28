@@ -1,254 +1,81 @@
-REM scripts\Settings.bat
+REM scripts\CreateConfig.bat
 @echo off
 chcp 65001 >nul
+setlocal enabledelayedexpansion
 
-title AceStep-1.5 Portable — Настройки
 pushd %~dp0..
 
-for /f %%a in ('powershell -Command "Write-Host ([char]27) -NoNewline"') do set "ESC=%%a"
-
-REM ============================================================================
-REM   Определение ROOT_DIR (корень проекта = уровень выше scripts\)
-REM ============================================================================
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
 
-goto :menu
+REM ============================================================================
+REM   Получаем значения из аргументов (или дефолты)
+REM ============================================================================
+set "LANGUAGE=%~1"
+set "CURRENT_MODEL=%~2"
+set "LM_MODEL=%~3"
+set "AUTO_OPEN_BROWSER=%~4"
+set "LAUNCH_METHOD=%~5"
+set "CUDA_VERSION=%~6"
 
-:smart_pause
-echo   %ESC%[2m       ^(нажмите любую клавишу для продолжения^)%ESC%[0m
-timeout /t 3 /nobreak >nul
-goto :eof
+::echo %LANGUAGE%
+::echo %CURRENT_MODEL%
+::echo %LM_MODEL%
+::echo %AUTO_OPEN_BROWSER%
+::echo %LAUNCH_METHOD%
+::echo %CUDA_VERSION%
+::pause
+
+if "%LANGUAGE%"=="" set "LANGUAGE=ru"
+if "%CURRENT_MODEL%"=="" set "CURRENT_MODEL=turbo"
+if "%LM_MODEL%"=="" set "LM_MODEL=acestep-5Hz-lm-1.7B"
+if "%AUTO_OPEN_BROWSER%"=="" set "AUTO_OPEN_BROWSER=1"
+if "%LAUNCH_METHOD%"=="" set "LAUNCH_METHOD=gradio"
+if "%CUDA_VERSION%"=="" set "CUDA_VERSION=12.8"
 
 REM ============================================================================
-REM   Валидация модели через MapModel.bat
+REM   Валидация
 REM ============================================================================
-:validate_model
-call "%SCRIPTS_DIR%\MapModel.bat" "%CURRENT_MODEL%"
-if "%REAL_MODEL%"=="acestep-v15-turbo" if not "%CURRENT_MODEL%"=="turbo" (
-    set "CURRENT_MODEL=turbo"
-    call "%SCRIPTS_DIR%\MapModel.bat" "turbo"
-)
-goto :eof
-
-:menu
-cls
-echo.
-echo  %ESC%[1;36m################################################################################%ESC%[0m
-echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
-echo  %ESC%[1;36m##%ESC%[0m                      %ESC%[1;37mAceStep-1.5 Portable%ESC%[0m   —   %ESC%[1;33mНастройки%ESC%[0m                  %ESC%[1;36m##%ESC%[0m
-echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
-echo  %ESC%[1;36m################################################################################%ESC%[0m
-echo.
+if /I "%CURRENT_MODEL%"=="base" set "CURRENT_MODEL=turbo"
+set "VALID_MODEL=0"
+if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="turbo" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
+if "!VALID_MODEL!"=="0" set "CURRENT_MODEL=turbo"
 
 REM ============================================================================
-REM   Чтение текущих настроек
+REM   Пересоздаём Config.ini с правильным порядком
 REM ============================================================================
-set "CURRENT_MODEL=turbo"
-set "LANGUAGE=ru"
-set "LM_MODEL=acestep-5Hz-lm-1.7B"
-set "AUTO_OPEN_BROWSER=1"
-set "LAUNCH_METHOD=gradio"
-
-if exist "%CONFIG_FILE%" (
-    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"CURRENT_MODEL=" "%CONFIG_FILE%"') do set "CURRENT_MODEL=%%b"
-    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
-    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LM_MODEL=" "%CONFIG_FILE%"') do set "LM_MODEL=%%b"
-    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"AUTO_OPEN_BROWSER=" "%CONFIG_FILE%"') do set "AUTO_OPEN_BROWSER=%%b"
-    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LAUNCH_METHOD=" "%CONFIG_FILE%"') do set "LAUNCH_METHOD=%%b"
-)
-
-set "CURRENT_MODEL=%CURRENT_MODEL: =%"
-set "LANGUAGE=%LANGUAGE: =%"
-set "LM_MODEL=%LM_MODEL: =%"
-set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
-set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
-
-call :validate_model
-
-REM Маппинг языка для отображения
-if "%LANGUAGE%"=="en" set "DISP_LANG=English"
-if "%LANGUAGE%"=="zh" set "DISP_LANG=中文"
-if "%LANGUAGE%"=="ja" set "DISP_LANG=日本語"
-if "%LANGUAGE%"=="he" set "DISP_LANG=עברית"
-if "%LANGUAGE%"=="pt" set "DISP_LANG=Português"
-if "%LANGUAGE%"=="ru" set "DISP_LANG=Русский"
-if not defined DISP_LANG set "DISP_LANG=%LANGUAGE%"
-
-REM Маппинг LM для отображения
-if "%LM_MODEL%"=="acestep-5Hz-lm-0.6B" set "DISP_LM=0.6B (быстро)"
-if "%LM_MODEL%"=="acestep-5Hz-lm-1.7B" set "DISP_LM=1.7B (баланс)"
-if "%LM_MODEL%"=="acestep-5Hz-lm-4B"   set "DISP_LM=4B (качество)"
-if not defined DISP_LM set "DISP_LM=%LM_MODEL%"
-
-echo   %ESC%[1;33mТекущие настройки:%ESC%[0m
-echo.
-echo   %ESC%[1;37m[1]%ESC%[0m Модель DiT: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%, %MODEL_SIZE%, %MODEL_VRAM%, %MODEL_STEPS% шагов^)%ESC%[0m
-echo   %ESC%[1;37m[2]%ESC%[0m Автозапуск браузера: %ESC%[1;33m%AUTO_OPEN_BROWSER%%ESC%[0m
-echo   %ESC%[1;37m[3]%ESC%[0m Метод запуска: %ESC%[1;33m%LAUNCH_METHOD%%ESC%[0m
-echo   %ESC%[1;37m[4]%ESC%[0m Язык интерфейса: %ESC%[1;33m%DISP_LANG%%ESC%[0m
-echo   %ESC%[1;37m[5]%ESC%[0m LM модель: %ESC%[1;33m%DISP_LM%%ESC%[0m
-echo.
-echo   %ESC%[1;37m[0]%ESC%[0m %ESC%[1mСохранить и выйти%ESC%[0m
-echo.
-set "choice="
-set /p "choice=%ESC%[33mВыберите настройку (1-5, 0 для выхода): %ESC%[0m"
-
-set "choice=%choice: =%"
-if "%choice%"=="" goto menu
-if "%choice%"=="0" goto exit
-if "%choice%"=="1" goto set_model
-if "%choice%"=="2" goto set_browser
-if "%choice%"=="3" goto set_method
-if "%choice%"=="4" goto set_language
-if "%choice%"=="5" goto set_lm_model
-goto menu
-
-:set_model
-set "NEW_MODEL="
-cls
-echo.
-echo   %ESC%[1;33mВыбор модели DiT:%ESC%[0m
-echo.
-echo   %ESC%[1;34m── Стандарт (2B, ~5GB) ─────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mturbo%ESC%[0m  %ESC%[2m~5GB  ^|  VRAM: 6GB+  ^|  Шаги: 8   ^|  Быстрая%ESC%[0m
-echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1msft%ESC%[0m    %ESC%[2m~5GB  ^|  VRAM: 6GB+  ^|  Шаги: 50  ^|  Стандарт%ESC%[0m
-echo.
-echo   %ESC%[1;34m── XL (4B, ~19GB) ───────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mxl-base%ESC%[0m   %ESC%[2m~19GB ^|  VRAM: 12GB+ ^|  Шаги: 50  ^|  Все задачи%ESC%[0m
-echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mxl-sft%ESC%[0m    %ESC%[2m~19GB ^|  VRAM: 12GB+ ^|  Шаги: 50  ^|  Стандарт%ESC%[0m
-echo   %ESC%[1;37m[5]%ESC%[0m %ESC%[1mxl-turbo%ESC%[0m  %ESC%[2m~19GB ^|  VRAM: 12GB+ ^|  Шаги: 8   ^|  Быстрая%ESC%[0m
-echo.
-set "mchoice="
-set /p "mchoice=%ESC%[33mВыберите модель (1-5): %ESC%[0m"
-
-set "mchoice=%mchoice: =%"
-if "%mchoice%"=="1" set "NEW_MODEL=turbo"
-if "%mchoice%"=="2" set "NEW_MODEL=sft"
-if "%mchoice%"=="3" set "NEW_MODEL=xl-base"
-if "%mchoice%"=="4" set "NEW_MODEL=xl-sft"
-if "%mchoice%"=="5" set "NEW_MODEL=xl-turbo"
-
-if defined NEW_MODEL (
-    call "%SCRIPTS_DIR%\CreateConfig.bat" "%LANGUAGE%" "%NEW_MODEL%" "%LM_MODEL%" "%AUTO_OPEN_BROWSER%" "%LAUNCH_METHOD%"
+(
+    echo ; ============================================================
+    echo ;   AceStep-1.5 Portable — Конфигурация
+    echo ; ============================================================
     echo.
-    echo   %ESC%[1;32m  ✔   Модель изменена на %NEW_MODEL%%ESC%[0m
-    call :smart_pause
-)
-goto menu
-
-:set_browser
-set "NEW_BROWSER="
-cls
-echo.
-echo   %ESC%[1;33mАвтозапуск браузера:%ESC%[0m
-echo.
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mВключить%ESC%[0m  — браузер откроется автоматически при запуске
-echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1mВыключить%ESC%[0m — запуск только сервера, браузер вручную
-echo.
-set "bchoice="
-set /p "bchoice=%ESC%[33mВыберите (1-2): %ESC%[0m"
-
-set "bchoice=%bchoice: =%"
-if "%bchoice%"=="1" set "NEW_BROWSER=1"
-if "%bchoice%"=="2" set "NEW_BROWSER=0"
-
-if defined NEW_BROWSER (
-    call "%SCRIPTS_DIR%\CreateConfig.bat" "%LANGUAGE%" "%CURRENT_MODEL%" "%LM_MODEL%" "%NEW_BROWSER%" "%LAUNCH_METHOD%"
+    echo ; --- Язык интерфейса ---
+    echo ; Доступные: en, zh, ja, he, pt, ru
+    echo LANGUAGE=%LANGUAGE%
     echo.
-    echo   %ESC%[1;32m  ✔   Автозапуск изменён на %NEW_BROWSER%%ESC%[0m
-    call :smart_pause
-)
-goto menu
-
-:set_method
-set "NEW_METHOD="
-cls
-echo.
-echo   %ESC%[1;33mМетод запуска:%ESC%[0m
-echo.
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mgradio%ESC%[0m  — веб-интерфейс Gradio (простой, стабильный)
-echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1mcomfyui%ESC%[0m — ноды ComfyUI (сложнее, но гибче)
-echo.
-set "mchoice="
-set /p "mchoice=%ESC%[33mВыберите (1-2): %ESC%[0m"
-
-set "mchoice=%mchoice: =%"
-if "%mchoice%"=="1" set "NEW_METHOD=gradio"
-if "%mchoice%"=="2" set "NEW_METHOD=comfyui"
-
-if defined NEW_METHOD (
-    call "%SCRIPTS_DIR%\CreateConfig.bat" "%LANGUAGE%" "%CURRENT_MODEL%" "%LM_MODEL%" "%AUTO_OPEN_BROWSER%" "%NEW_METHOD%"
+    echo ; --- Модель DiT ---
+    echo ; Доступные: turbo, sft, xl-base, xl-sft, xl-turbo
+    echo ; Примечание: base устарел, используйте turbo или sft
+    echo CURRENT_MODEL=%CURRENT_MODEL%
     echo.
-    echo   %ESC%[1;32m  ✔   Метод изменён на %NEW_METHOD%%ESC%[0m
-    call :smart_pause
-)
-goto menu
-
-:set_language
-set "NEW_LANG="
-cls
-echo.
-echo   %ESC%[1;33mВыбор языка интерфейса:%ESC%[0m
-echo.
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mEnglish%ESC%[0m
-echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1m中文 (Chinese)%ESC%[0m
-echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1m日本語 (Japanese)%ESC%[0m
-echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mРусский%ESC%[0m
-echo   %ESC%[1;37m[5]%ESC%[0m %ESC%[1mעברית (Hebrew)%ESC%[0m
-echo   %ESC%[1;37m[6]%ESC%[0m %ESC%[1mPortuguês%ESC%[0m
-echo.
-set "lchoice="
-set /p "lchoice=%ESC%[33mВыберите язык (1-6): %ESC%[0m"
-
-set "lchoice=%lchoice: =%"
-if "%lchoice%"=="1" set "NEW_LANG=en"
-if "%lchoice%"=="2" set "NEW_LANG=zh"
-if "%lchoice%"=="3" set "NEW_LANG=ja"
-if "%lchoice%"=="4" set "NEW_LANG=ru"
-if "%lchoice%"=="5" set "NEW_LANG=he"
-if "%lchoice%"=="6" set "NEW_LANG=pt"
-
-if defined NEW_LANG (
-    call "%SCRIPTS_DIR%\CreateConfig.bat" "%NEW_LANG%" "%CURRENT_MODEL%" "%LM_MODEL%" "%AUTO_OPEN_BROWSER%" "%LAUNCH_METHOD%"
+    echo ; --- LM модель ---
+    echo ; Доступные: acestep-5Hz-lm-0.6B, acestep-5Hz-lm-1.7B, acestep-5Hz-lm-4B
+    echo ; 0.6B = быстро, мало VRAM ^| 1.7B = баланс ^| 4B = макс качество
+    echo LM_MODEL=%LM_MODEL%
     echo.
-    echo   %ESC%[1;32m  ✔   Язык изменён на %NEW_LANG%%ESC%[0m
-    call :smart_pause
-)
-goto menu
-
-:set_lm_model
-set "NEW_LM="
-cls
-echo.
-echo   %ESC%[1;33mВыбор LM модели:%ESC%[0m
-echo.
-echo   %ESC%[1;34m── Мало VRAM (8GB) ─────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1m0.6B%ESC%[0m   %ESC%[2m~1.2GB VRAM  ^|  Быстро  ^|  Базовое качество%ESC%[0m
-echo.
-echo   %ESC%[1;34m── Баланс ──────────────────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1m1.7B%ESC%[0m   %ESC%[2m~3.6GB VRAM  ^|  Стандарт  ^|  Хорошее качество%ESC%[0m
-echo.
-echo   %ESC%[1;34m── Максимальное качество ─────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1m4B%ESC%[0m     %ESC%[2m~8GB VRAM   ^|  Медленнее  ^|  Отличное качество%ESC%[0m
-echo.
-set "lmchoice="
-set /p "lmchoice=%ESC%[33mВыберите LM модель (1-3): %ESC%[0m"
-
-set "lmchoice=%lmchoice: =%"
-if "%lmchoice%"=="1" set "NEW_LM=acestep-5Hz-lm-0.6B"
-if "%lmchoice%"=="2" set "NEW_LM=acestep-5Hz-lm-1.7B"
-if "%lmchoice%"=="3" set "NEW_LM=acestep-5Hz-lm-4B"
-
-if defined NEW_LM (
-    call "%SCRIPTS_DIR%\CreateConfig.bat" "%LANGUAGE%" "%CURRENT_MODEL%" "%NEW_LM%" "%AUTO_OPEN_BROWSER%" "%LAUNCH_METHOD%"
+    echo ; --- Запуск ---
+    echo AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER%
+    echo LAUNCH_METHOD=%LAUNCH_METHOD%
     echo.
-    echo   %ESC%[1;32m  ✔   LM модель изменена на %NEW_LM%%ESC%[0m
-    call :smart_pause
-)
-goto menu
+    echo ; --- CUDA ---
+    echo ; Для RTX 5090 ^(Blackwell^) — CUDA 12.8
+    echo CUDA_VERSION=%CUDA_VERSION%
+) > "%CONFIG_FILE%"
 
-:exit
 popd
 exit /b 0
