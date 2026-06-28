@@ -39,6 +39,7 @@ if not exist "%TEMP%" mkdir "%TEMP%" 2>nul
 if not exist "%APPDATA%" mkdir "%APPDATA%" 2>nul
 if not exist "%LOCALAPPDATA%" mkdir "%LOCALAPPDATA%" 2>nul
 if not exist "%HOME%" mkdir "%HOME%" 2>nul
+if not exist "%HOME%\Desktop" mkdir "%HOME%\Desktop" 2>nul
 if not exist "%PIP_CACHE_DIR%" mkdir "%PIP_CACHE_DIR%" 2>nul
 if not exist "%PYTHONUSERBASE%" mkdir "%PYTHONUSERBASE%" 2>nul
 

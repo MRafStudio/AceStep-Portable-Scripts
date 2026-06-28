@@ -36,6 +36,7 @@ if not exist "%DATA_DIR%" mkdir "%DATA_DIR%" 2>nul
 if not exist "%TEMP%" mkdir "%TEMP%" 2>nul
 if not exist "%APPDATA%" mkdir "%APPDATA%" 2>nul
 if not exist "%HOME%" mkdir "%HOME%" 2>nul
+if not exist "%HOME%\Desktop" mkdir "%HOME%\Desktop" 2>nul
 
 REM ============================================================================
 REM   Чтение Config.ini
