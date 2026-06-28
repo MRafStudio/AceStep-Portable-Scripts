@@ -41,16 +41,19 @@ REM ============================================================================
 REM   Чтение Config.ini
 REM ============================================================================
 set "CURRENT_MODEL=turbo"
+set "LANGUAGE=ru"
 set "AUTO_OPEN_BROWSER=1"
 set "LAUNCH_METHOD=gradio"
 
 if exist "%CONFIG_FILE%" (
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"CURRENT_MODEL=" "%CONFIG_FILE%"') do set "CURRENT_MODEL=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"AUTO_OPEN_BROWSER=" "%CONFIG_FILE%"') do set "AUTO_OPEN_BROWSER=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LAUNCH_METHOD=" "%CONFIG_FILE%"') do set "LAUNCH_METHOD=%%b"
 )
 
 set "CURRENT_MODEL=%CURRENT_MODEL: =%"
+set "LANGUAGE=%LANGUAGE: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
@@ -124,7 +127,7 @@ set "ENV_FILE=%REPO_DIR%\.env"
     echo # --- Gradio UI ---
     echo PORT=7860
     echo SERVER_NAME=127.0.0.1
-    echo LANGUAGE=en
+    echo LANGUAGE=%LANGUAGE%
     echo.
     echo # --- Стартовые настройки ---
     echo ACESTEP_NO_INIT=false
@@ -161,7 +164,7 @@ cd /d "%REPO_DIR%"
 "%VENV_PYTHON%" "%PIPELINE_PY%" ^
     --port 7860 ^
     --server-name 127.0.0.1 ^
-    --language en ^
+    --language %LANGUAGE% ^
     --config_path %REAL_MODEL% ^
     --lm_model_path acestep-5Hz-lm-1.7B ^
     --init_service true

@@ -93,9 +93,10 @@ if not exist "%CONFIG_FILE%" (
         echo ;   AceStep-1.5 Portable — Конфигурация
         echo ; ============================================================
         echo.
-        echo ; --- Python ---
-        echo PYTHON_VERSION=3.12.10
-        echo.
+		echo ; --- Язык интерфейса ---
+        echo ; Доступные: en, zh, ja, he, pt, ru
+        echo LANGUAGE=ru
+		echo.
         echo ; --- Модель ---
         echo ; Доступные: base, sft, turbo, xl-base, xl-sft, xl-turbo
         echo ; Примечание: base устарел, используйте turbo или sft
@@ -117,16 +118,19 @@ REM ============================================================================
 REM   Чтение Config.ini
 REM ============================================================================
 set "CURRENT_MODEL=turbo"
+set "LANGUAGE=ru"
 set "AUTO_OPEN_BROWSER=1"
 set "LAUNCH_METHOD=gradio"
 
 if exist "%CONFIG_FILE%" (
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"CURRENT_MODEL=" "%CONFIG_FILE%"') do set "CURRENT_MODEL=%%b"
+	for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"AUTO_OPEN_BROWSER=" "%CONFIG_FILE%"') do set "AUTO_OPEN_BROWSER=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LAUNCH_METHOD=" "%CONFIG_FILE%"') do set "LAUNCH_METHOD=%%b"
 )
 
 set "CURRENT_MODEL=%CURRENT_MODEL: =%"
+set "LANGUAGE=%LANGUAGE: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
@@ -170,11 +174,13 @@ if "%CURRENT_MODEL%"=="xl-turbo" set "REAL_MODEL=acestep-v15-xl-turbo"
 REM Перечитываем Config.ini (мог измениться в других скриптах)
 if exist "%CONFIG_FILE%" (
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"CURRENT_MODEL=" "%CONFIG_FILE%"') do set "CURRENT_MODEL=%%b"
+	for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"AUTO_OPEN_BROWSER=" "%CONFIG_FILE%"') do set "AUTO_OPEN_BROWSER=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LAUNCH_METHOD=" "%CONFIG_FILE%"') do set "LAUNCH_METHOD=%%b"
 )
 
 set "CURRENT_MODEL=%CURRENT_MODEL: =%"
+set "LANGUAGE=%LANGUAGE: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
@@ -270,6 +276,7 @@ set /a "INSTALLED_COUNT=!PYTHON_INSTALLED!+!REPO_INSTALLED!+!DEPS_INSTALLED!"
 echo.
 echo   %ESC%[1;33mТекущие настройки:%ESC%[0m
 echo     Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%^)%ESC%[0m
+echo     Язык: %ESC%[1;33m%LANGUAGE%%ESC%[0m
 echo     Запуск: %ESC%[1;33m%LAUNCH_METHOD%%ESC%[0m
 echo     Авто-браузер: %ESC%[1;33m%AUTO_OPEN_BROWSER%%ESC%[0m
 echo.

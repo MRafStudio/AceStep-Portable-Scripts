@@ -14,7 +14,6 @@ REM ============================================================================
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
-set "MODELS_DIR=%ROOT_DIR%\models"
 
 :menu
 cls
@@ -32,18 +31,21 @@ REM ============================================================================
 set "CURRENT_MODEL=turbo"
 set "AUTO_OPEN_BROWSER=1"
 set "LAUNCH_METHOD=gradio"
+set "LANGUAGE=ru"
 
 if exist "%CONFIG_FILE%" (
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"CURRENT_MODEL=" "%CONFIG_FILE%"') do set "CURRENT_MODEL=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"AUTO_OPEN_BROWSER=" "%CONFIG_FILE%"') do set "AUTO_OPEN_BROWSER=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LAUNCH_METHOD=" "%CONFIG_FILE%"') do set "LAUNCH_METHOD=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
 )
 
 set "CURRENT_MODEL=%CURRENT_MODEL: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
+set "LANGUAGE=%LANGUAGE: =%"
 
-REM Валидация
+REM Валидация модели
 set "VALID_MODEL=0"
 if /I "%CURRENT_MODEL%"=="base" set "VALID_MODEL=1"
 if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
@@ -62,16 +64,26 @@ if "%CURRENT_MODEL%"=="xl-base"  set "DISP_MODEL=acestep-v15-xl-base"
 if "%CURRENT_MODEL%"=="xl-sft"   set "DISP_MODEL=acestep-v15-xl-sft"
 if "%CURRENT_MODEL%"=="xl-turbo" set "DISP_MODEL=acestep-v15-xl-turbo"
 
+REM Маппинг языка для отображения
+if "%LANGUAGE%"=="en" set "DISP_LANG=English"
+if "%LANGUAGE%"=="zh" set "DISP_LANG=中文"
+if "%LANGUAGE%"=="ja" set "DISP_LANG=日本語"
+if "%LANGUAGE%"=="he" set "DISP_LANG=עברית"
+if "%LANGUAGE%"=="pt" set "DISP_LANG=Português"
+if "%LANGUAGE%"=="ru" set "DISP_LANG=Русский"
+if not defined DISP_LANG set "DISP_LANG=%LANGUAGE%"
+
 echo   %ESC%[1;33mТекущие настройки:%ESC%[0m
 echo.
 echo   %ESC%[1;37m[1]%ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%DISP_MODEL%^)%ESC%[0m
 echo   %ESC%[1;37m[2]%ESC%[0m Автозапуск браузера: %ESC%[1;33m%AUTO_OPEN_BROWSER%%ESC%[0m
 echo   %ESC%[1;37m[3]%ESC%[0m Метод запуска: %ESC%[1;33m%LAUNCH_METHOD%%ESC%[0m
+echo   %ESC%[1;37m[4]%ESC%[0m Язык интерфейса: %ESC%[1;33m%DISP_LANG%%ESC%[0m
 echo.
 echo   %ESC%[1;37m[0]%ESC%[0m %ESC%[1mСохранить и выйти%ESC%[0m
 echo.
 set "choice="
-set /p "choice=%ESC%[33mВыберите настройку (1-3, 0 для выхода): %ESC%[0m"
+set /p "choice=%ESC%[33mВыберите настройку (1-4, 0 для выхода): %ESC%[0m"
 
 set "choice=%choice: =%"
 if "%choice%"=="" goto menu
@@ -79,6 +91,7 @@ if "%choice%"=="0" goto exit
 if "%choice%"=="1" goto set_model
 if "%choice%"=="2" goto set_browser
 if "%choice%"=="3" goto set_method
+if "%choice%"=="4" goto set_language
 goto menu
 
 :set_model
@@ -159,6 +172,37 @@ if "%mchoice%"=="1" (
 if "%mchoice%"=="2" (
     powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'LAUNCH_METHOD=.*', 'LAUNCH_METHOD=comfyui' | Set-Content '%CONFIG_FILE%'"
     echo   %ESC%[1;32m  ✔   Метод изменён на comfyui%ESC%[0m
+    timeout /t 2 /nobreak >nul
+)
+goto menu
+
+:set_language
+cls
+echo.
+echo   %ESC%[1;33mВыбор языка интерфейса:%ESC%[0m
+echo.
+echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mEnglish%ESC%[0m
+echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1m中文 (Chinese)%ESC%[0m
+echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1m日本語 (Japanese)%ESC%[0m
+echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mРусский%ESC%[0m
+echo   %ESC%[1;37m[5]%ESC%[0m %ESC%[1mעברית (Hebrew)%ESC%[0m
+echo   %ESC%[1;37m[6]%ESC%[0m %ESC%[1mPortuguês%ESC%[0m
+echo.
+set "lchoice="
+set /p "lchoice=%ESC%[33mВыберите язык (1-6): %ESC%[0m"
+
+set "lchoice=%lchoice: =%"
+if "%lchoice%"=="1" set "NEW_LANG=en"
+if "%lchoice%"=="2" set "NEW_LANG=zh"
+if "%lchoice%"=="3" set "NEW_LANG=ja"
+if "%lchoice%"=="4" set "NEW_LANG=ru"
+if "%lchoice%"=="5" set "NEW_LANG=he"
+if "%lchoice%"=="6" set "NEW_LANG=pt"
+
+if defined NEW_LANG (
+    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'LANGUAGE=.*', 'LANGUAGE=%NEW_LANG%' | Set-Content '%CONFIG_FILE%'"
+    set "LANGUAGE=%NEW_LANG%"
+    echo   %ESC%[1;32m  ✔   Язык изменён на %NEW_LANG%%ESC%[0m
     timeout /t 2 /nobreak >nul
 )
 goto menu
