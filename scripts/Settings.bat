@@ -29,7 +29,7 @@ echo.
 REM ============================================================================
 REM   Чтение текущих настроек
 REM ============================================================================
-set "CURRENT_MODEL=xl-base"
+set "CURRENT_MODEL=turbo"
 set "AUTO_OPEN_BROWSER=1"
 set "LAUNCH_METHOD=gradio"
 
@@ -43,9 +43,28 @@ set "CURRENT_MODEL=%CURRENT_MODEL: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
+REM Валидация
+set "VALID_MODEL=0"
+if /I "%CURRENT_MODEL%"=="base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="turbo" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
+
+if "!VALID_MODEL!"=="0" set "CURRENT_MODEL=turbo"
+if /I "%CURRENT_MODEL%"=="base" set "CURRENT_MODEL=turbo"
+
+REM Маппинг для отображения
+if "%CURRENT_MODEL%"=="turbo"    set "DISP_MODEL=acestep-v15-turbo"
+if "%CURRENT_MODEL%"=="sft"      set "DISP_MODEL=acestep-v15-sft"
+if "%CURRENT_MODEL%"=="xl-base"  set "DISP_MODEL=acestep-v15-xl-base"
+if "%CURRENT_MODEL%"=="xl-sft"   set "DISP_MODEL=acestep-v15-xl-sft"
+if "%CURRENT_MODEL%"=="xl-turbo" set "DISP_MODEL=acestep-v15-xl-turbo"
+
 echo   %ESC%[1;33mТекущие настройки:%ESC%[0m
 echo.
-echo   %ESC%[1;37m[1]%ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m
+echo   %ESC%[1;37m[1]%ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%DISP_MODEL%^)%ESC%[0m
 echo   %ESC%[1;37m[2]%ESC%[0m Автозапуск браузера: %ESC%[1;33m%AUTO_OPEN_BROWSER%%ESC%[0m
 echo   %ESC%[1;37m[3]%ESC%[0m Метод запуска: %ESC%[1;33m%LAUNCH_METHOD%%ESC%[0m
 echo.
@@ -65,23 +84,29 @@ goto menu
 :set_model
 cls
 echo.
-echo   %ESC%[1;33mВыбор модели:%ESC%[0m
+echo   %ESC%[1;33mВыбор модели DiT:%ESC%[0m
 echo.
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mbase%ESC%[0m        %ESC%[2m~8GB  |  VRAM: 8GB+  |  Быстро%ESC%[0m
-echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1mxl-base%ESC%[0m     %ESC%[2m~20GB |  VRAM: 20GB+ |  Отличное качество%ESC%[0m
-echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mxl-sft%ESC%[0m      %ESC%[2m~20GB |  VRAM: 20GB+ |  Fine-tuned%ESC%[0m
-echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mxl-turbo%ESC%[0m    %ESC%[2m~20GB |  VRAM: 20GB+ |  Очень быстро%ESC%[0m
+echo   %ESC%[1;34m── Стандарт (2B, ~5GB) ─────────────────────────────────────────%ESC%[0m
+echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mturbo%ESC%[0m  %ESC%[2m~5GB  |  VRAM: 6GB+  |  Шаги: 8   |  Быстрая%ESC%[0m
+echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1msft%ESC%[0m    %ESC%[2m~5GB  |  VRAM: 6GB+  |  Шаги: 50  |  Стандарт%ESC%[0m
+echo.
+echo   %ESC%[1;34m── XL (4B, ~19GB) ───────────────────────────────────────────%ESC%[0m
+echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mxl-base%ESC%[0m   %ESC%[2m~19GB |  VRAM: 12GB+ |  Шаги: 50  |  Все задачи%ESC%[0m
+echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mxl-sft%ESC%[0m    %ESC%[2m~19GB |  VRAM: 12GB+ |  Шаги: 50  |  Стандарт%ESC%[0m
+echo   %ESC%[1;37m[5]%ESC%[0m %ESC%[1mxl-turbo%ESC%[0m  %ESC%[2m~19GB |  VRAM: 12GB+ |  Шаги: 8   |  Быстрая%ESC%[0m
 echo.
 echo   %ESC%[1;33mТвоя видеокарта:%ESC%[0m %ESC%[1;32mRTX 5090 32GB%ESC%[0m
+echo   %ESC%[1;32m  Рекомендуется: xl-base или xl-sft для максимального качества%ESC%[0m
 echo.
 set "mchoice="
-set /p "mchoice=%ESC%[33mВыберите модель (1-4): %ESC%[0m"
+set /p "mchoice=%ESC%[33mВыберите модель (1-5): %ESC%[0m"
 
 set "mchoice=%mchoice: =%"
-if "%mchoice%"=="1" set "NEW_MODEL=base"
-if "%mchoice%"=="2" set "NEW_MODEL=xl-base"
-if "%mchoice%"=="3" set "NEW_MODEL=xl-sft"
-if "%mchoice%"=="4" set "NEW_MODEL=xl-turbo"
+if "%mchoice%"=="1" set "NEW_MODEL=turbo"
+if "%mchoice%"=="2" set "NEW_MODEL=sft"
+if "%mchoice%"=="3" set "NEW_MODEL=xl-base"
+if "%mchoice%"=="4" set "NEW_MODEL=xl-sft"
+if "%mchoice%"=="5" set "NEW_MODEL=xl-turbo"
 
 if defined NEW_MODEL (
     powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'CURRENT_MODEL=.*', 'CURRENT_MODEL=%NEW_MODEL%' | Set-Content '%CONFIG_FILE%'"

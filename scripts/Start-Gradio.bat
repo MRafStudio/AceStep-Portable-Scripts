@@ -18,7 +18,6 @@ for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
 set "REPO_DIR=%ROOT_DIR%\repo"
-set "MODELS_DIR=%ROOT_DIR%\models"
 set "VENV_PYTHON=%REPO_DIR%\.venv\Scripts\python.exe"
 set "PIPELINE_PY=%REPO_DIR%\acestep\acestep_v15_pipeline.py"
 
@@ -56,6 +55,30 @@ set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
 REM ============================================================================
+REM   Валидация модели
+REM ============================================================================
+set "VALID_MODEL=0"
+if /I "%CURRENT_MODEL%"=="base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="turbo" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
+
+if "!VALID_MODEL!"=="0" set "CURRENT_MODEL=turbo"
+if /I "%CURRENT_MODEL%"=="base" set "CURRENT_MODEL=turbo"
+
+REM ============================================================================
+REM   Маппинг: короткое имя → реальное имя папки
+REM ============================================================================
+if "%CURRENT_MODEL%"=="base"     set "REAL_MODEL=acestep-v15-base"
+if "%CURRENT_MODEL%"=="sft"      set "REAL_MODEL=acestep-v15-sft"
+if "%CURRENT_MODEL%"=="turbo"    set "REAL_MODEL=acestep-v15-turbo"
+if "%CURRENT_MODEL%"=="xl-base"  set "REAL_MODEL=acestep-v15-xl-base"
+if "%CURRENT_MODEL%"=="xl-sft"   set "REAL_MODEL=acestep-v15-xl-sft"
+if "%CURRENT_MODEL%"=="xl-turbo" set "REAL_MODEL=acestep-v15-xl-turbo"
+
+REM ============================================================================
 REM   Проверки
 REM ============================================================================
 if not exist "%VENV_PYTHON%" (
@@ -85,7 +108,7 @@ set "ENV_FILE=%REPO_DIR%\.env"
     echo # Редактируйте через Settings.bat или вручную
     echo.
     echo # --- Модели ---
-    echo ACESTEP_CONFIG_PATH=acestep-v15-%CURRENT_MODEL%
+    echo ACESTEP_CONFIG_PATH=%REAL_MODEL%
     echo ACESTEP_LM_MODEL_PATH=acestep-5Hz-lm-1.7B
     echo.
     echo # --- Устройство ---
@@ -118,7 +141,7 @@ echo  %ESC%[1;36m##%ESC%[0m                %ESC%[1;37mAceStep-1.5%ESC%[0m   — 
 echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
 echo  %ESC%[1;36m################################################################################%ESC%[0m
 echo.
-echo   %ESC%[1;33mМодель:%ESC%[0m %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m
+echo   %ESC%[1;33mМодель:%ESC%[0m %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%^)%ESC%[0m
 echo   %ESC%[1;33mURL:%ESC%[0m %ESC%[1;37mhttp://127.0.0.1:7860%ESC%[0m
 echo   %ESC%[1;33mМодели:%ESC%[0m %ESC%[2mавто-загрузка в repo\checkpoints\%ESC%[0m
 echo.
@@ -139,7 +162,7 @@ cd /d "%REPO_DIR%"
     --port 7860 ^
     --server-name 127.0.0.1 ^
     --language en ^
-    --config_path acestep-v15-%CURRENT_MODEL% ^
+    --config_path %REAL_MODEL% ^
     --lm_model_path acestep-5Hz-lm-1.7B ^
     --init_service true
 

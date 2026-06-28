@@ -362,6 +362,46 @@ del "!TEMP!\!FLASH_NAME!" 2>nul
 :flash_done
 
 REM ============================================================================
+REM   [5/6] nano-vllm (для ускорения LM-инференса)
+REM ============================================================================
+echo.
+echo   %ESC%[1;33m[5/6]%ESC%[0m %ESC%[1mУстановка nano-vllm...%ESC%[0m
+
+if exist "%REPO_DIR%\acestep\third_parts\nano-vllm\pyproject.toml" (
+    cd /d "%REPO_DIR%\acestep\third_parts\nano-vllm"
+    "%VENV_PIP%" install . >nul 2>&1
+    if !errorlevel! equ 0 (
+        echo   %ESC%[1;32m  +   nano-vllm установлен.%ESC%[0m
+    ) else (
+        echo   %ESC%[1;33m  ⚠   nano-vllm не установился ^(будет PyTorch fallback^)%ESC%[0m
+    )
+) else (
+    echo   %ESC%[1;33m  .   nano-vllm не найден в репозитории, пропускаем.%ESC%[0m
+)
+
+REM ============================================================================
+REM   [6/6] Опциональные пакеты (torchao, hf_xet)
+REM ============================================================================
+echo.
+echo   %ESC%[1;33m[6/6]%ESC%[0m %ESC%[1mУстановка опциональных пакетов...%ESC%[0m
+
+REM torchao для INT8 квантизации
+"%VENV_PIP%" install torchao==0.11.0 >nul 2>&1
+if !errorlevel! equ 0 (
+    echo   %ESC%[1;32m  +   torchao установлен.%ESC%[0m
+) else (
+    echo   %ESC%[1;33m  .   torchao пропущен.%ESC%[0m
+)
+
+REM hf_xet для ускоренного скачивания моделей
+"%VENV_PIP%" install hf_xet >nul 2>&1
+if !errorlevel! equ 0 (
+    echo   %ESC%[1;32m  +   hf_xet установлен.%ESC%[0m
+) else (
+    echo   %ESC%[1;33m  .   hf_xet пропущен.%ESC%[0m
+)
+
+REM ============================================================================
 REM   Проверка
 REM ============================================================================
 echo.

@@ -3,7 +3,7 @@ REM scripts\InstallOrUpdate-Models.bat
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-title AceStep-1.5 — Установка / Обновление моделей
+title AceStep-1.5 — Управление моделями
 
 REM ============================================================================
 REM   Получение ESC
@@ -40,6 +40,26 @@ if exist "%CONFIG_FILE%" (
 )
 set "CURRENT_MODEL=%CURRENT_MODEL: =%"
 
+REM Валидация
+set "VALID_MODEL=0"
+if /I "%CURRENT_MODEL%"=="base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="turbo" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
+
+if "!VALID_MODEL!"=="0" set "CURRENT_MODEL=turbo"
+if /I "%CURRENT_MODEL%"=="base" set "CURRENT_MODEL=turbo"
+
+REM Маппинг
+if "%CURRENT_MODEL%"=="base"     set "REAL_MODEL=acestep-v15-base"
+if "%CURRENT_MODEL%"=="sft"      set "REAL_MODEL=acestep-v15-sft"
+if "%CURRENT_MODEL%"=="turbo"    set "REAL_MODEL=acestep-v15-turbo"
+if "%CURRENT_MODEL%"=="xl-base"  set "REAL_MODEL=acestep-v15-xl-base"
+if "%CURRENT_MODEL%"=="xl-sft"   set "REAL_MODEL=acestep-v15-xl-sft"
+if "%CURRENT_MODEL%"=="xl-turbo" set "REAL_MODEL=acestep-v15-xl-turbo"
+
 :menu
 cls
 echo.
@@ -47,19 +67,28 @@ echo  %ESC%[1;36m╔════════════════════
 echo  %ESC%[1;36m║%ESC%[0m               %ESC%[1;37mAceStep-1.5%ESC%[0m   —   %ESC%[1;33mУправление моделями%ESC%[0m                      %ESC%[1;36m║%ESC%[0m
 echo  %ESC%[1;36m╚══════════════════════════════════════════════════════════════════════════════╝%ESC%[0m
 echo.
-echo   %ESC%[1;33mТекущая модель в Config.ini:%ESC%[0m %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m
+echo   %ESC%[1;33mТекущая модель:%ESC%[0m %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%^)%ESC%[0m
 echo.
 echo   %ESC%[1;33mСтатус checkpoints\:%ESC%[0m
 
 if exist "%CHECKPOINTS_DIR%" (
-    dir /b /ad "%CHECKPOINTS_DIR%" 2>nul | findstr /I "acestep" >nul
+    dir /b "%CHECKPOINTS_DIR%\acestep-v15-*" >nul 2>nul
     if !errorlevel! equ 0 (
-        echo     %ESC%[1;32m+  %ESC%[0m Модели уже загружены
-        for /f %%a in ('dir /b /ad "%CHECKPOINTS_DIR%\acestep*" 2^>nul') do (
+        echo     %ESC%[1;32m+  %ESC%[0m Загруженные модели:
+        for /f %%a in ('dir /b /ad "%CHECKPOINTS_DIR%\acestep-v15-*" 2^>nul') do (
             echo     %ESC%[2m   - %%a%ESC%[0m
         )
     ) else (
         echo     %ESC%[1;33m.  %ESC%[0m Модели будут загружены автоматически при первом запуске
+    )
+    
+    REM Проверяем LM модели
+    dir /b "%CHECKPOINTS_DIR%\acestep-5Hz-lm-*" >nul 2>nul
+    if !errorlevel! equ 0 (
+        echo     %ESC%[1;32m+  %ESC%[0m LM модели:
+        for /f %%a in ('dir /b /ad "%CHECKPOINTS_DIR%\acestep-5Hz-lm-*" 2^>nul') do (
+            echo     %ESC%[2m   - %%a%ESC%[0m
+        )
     )
 ) else (
     echo     %ESC%[1;33m.  %ESC%[0m Каталог checkpoints\ ещё не создан
@@ -67,19 +96,21 @@ if exist "%CHECKPOINTS_DIR%" (
 )
 
 echo.
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mСменить модель в Config.ini%ESC%[0m %ESC%[2m(без скачивания)%ESC%[0m
+echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mСменить модель DiT%ESC%[0m %ESC%[2m(без скачивания, авто-загрузка при запуске)%ESC%[0m
 echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1mОткрыть папку checkpoints\%ESC%[0m
+echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mУдалить все модели%ESC%[0m %ESC%[2m(освободить место)%ESC%[0m
 echo.
 echo   %ESC%[1;37m[0]%ESC%[0m %ESC%[1mНазад%ESC%[0m
 echo.
 set "choice="
-set /p "choice=%ESC%[33mДействие (0-2): %ESC%[0m"
+set /p "choice=%ESC%[33mДействие (0-3): %ESC%[0m"
 
 set "choice=%choice: =%"
 if "%choice%"=="" goto menu
 if "%choice%"=="0" goto exit
 if "%choice%"=="1" goto change_model
 if "%choice%"=="2" goto open_folder
+if "%choice%"=="3" goto delete_models
 goto menu
 
 :change_model
@@ -88,32 +119,38 @@ echo.
 echo   %ESC%[1;33mВыбор модели DiT:%ESC%[0m
 echo.
 echo   %ESC%[1;34m── Стандарт (2B, ~5GB) ─────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mbase%ESC%[0m   %ESC%[2mVRAM: 6GB+  Шаги: 50  Все задачи%ESC%[0m
+echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mturbo%ESC%[0m  %ESC%[2mVRAM: 6GB+  Шаги: 8   Быстрая%ESC%[0m
 echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1msft%ESC%[0m    %ESC%[2mVRAM: 6GB+  Шаги: 50  Стандарт%ESC%[0m
-echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mturbo%ESC%[0m  %ESC%[2mVRAM: 6GB+  Шаги: 8   Быстрая%ESC%[0m
 echo.
 echo   %ESC%[1;34m── XL (4B, ~19GB) ───────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mxl-base%ESC%[0m   %ESC%[2mVRAM: 12GB+  Шаги: 50  Все задачи%ESC%[0m
-echo   %ESC%[1;37m[5]%ESC%[0m %ESC%[1mxl-sft%ESC%[0m    %ESC%[2mVRAM: 12GB+  Шаги: 50  Стандарт%ESC%[0m
-echo   %ESC%[1;37m[6]%ESC%[0m %ESC%[1mxl-turbo%ESC%[0m  %ESC%[2mVRAM: 12GB+  Шаги: 8   Быстрая%ESC%[0m
+echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mxl-base%ESC%[0m   %ESC%[2mVRAM: 12GB+  Шаги: 50  Все задачи%ESC%[0m
+echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mxl-sft%ESC%[0m    %ESC%[2mVRAM: 12GB+  Шаги: 50  Стандарт%ESC%[0m
+echo   %ESC%[1;37m[5]%ESC%[0m %ESC%[1mxl-turbo%ESC%[0m  %ESC%[2mVRAM: 12GB+  Шаги: 8   Быстрая%ESC%[0m
 echo.
 set "mchoice="
-set /p "mchoice=%ESC%[33mВыберите модель (1-6): %ESC%[0m"
+set /p "mchoice=%ESC%[33mВыберите модель (1-5): %ESC%[0m"
 
 set "mchoice=%mchoice: =%"
-if "%mchoice%"=="1" set "NEW_MODEL=base"
+if "%mchoice%"=="1" set "NEW_MODEL=turbo"
 if "%mchoice%"=="2" set "NEW_MODEL=sft"
-if "%mchoice%"=="3" set "NEW_MODEL=turbo"
-if "%mchoice%"=="4" set "NEW_MODEL=xl-base"
-if "%mchoice%"=="5" set "NEW_MODEL=xl-sft"
-if "%mchoice%"=="6" set "NEW_MODEL=xl-turbo"
+if "%mchoice%"=="3" set "NEW_MODEL=xl-base"
+if "%mchoice%"=="4" set "NEW_MODEL=xl-sft"
+if "%mchoice%"=="5" set "NEW_MODEL=xl-turbo"
 
 if defined NEW_MODEL (
     if exist "%CONFIG_FILE%" (
         powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'CURRENT_MODEL=.*', 'CURRENT_MODEL=%NEW_MODEL%' | Set-Content '%CONFIG_FILE%'"
         set "CURRENT_MODEL=%NEW_MODEL%"
+        
+        REM Обновляем маппинг
+        if "%NEW_MODEL%"=="turbo"    set "REAL_MODEL=acestep-v15-turbo"
+        if "%NEW_MODEL%"=="sft"      set "REAL_MODEL=acestep-v15-sft"
+        if "%NEW_MODEL%"=="xl-base"  set "REAL_MODEL=acestep-v15-xl-base"
+        if "%NEW_MODEL%"=="xl-sft"   set "REAL_MODEL=acestep-v15-xl-sft"
+        if "%NEW_MODEL%"=="xl-turbo" set "REAL_MODEL=acestep-v15-xl-turbo"
+        
         echo.
-        echo   %ESC%[1;32m  +   Модель изменена на %NEW_MODEL%%ESC%[0m
+        echo   %ESC%[1;32m  +   Модель изменена на %NEW_MODEL% ^(%REAL_MODEL%^)%ESC%[0m
         echo   %ESC%[2m       При следующем запуске Ace-Step загрузит нужную модель.%ESC%[0m
     ) else (
         echo   %ESC%[1;31m[ОШИБКА] Config.ini не найден.%ESC%[0m
@@ -125,6 +162,32 @@ goto menu
 :open_folder
 if not exist "%CHECKPOINTS_DIR%" mkdir "%CHECKPOINTS_DIR%" 2>nul
 start "" "%CHECKPOINTS_DIR%"
+goto menu
+
+:delete_models
+cls
+echo.
+echo  %ESC%[1;31m╔══════════════════════════════════════════════════════════════════════════════╗%ESC%[0m
+echo  %ESC%[1;31m║%ESC%[0m                          %ESC%[1;37m⚠  УДАЛЕНИЕ МОДЕЛЕЙ ⚠%ESC%[0m                           %ESC%[1;31m║%ESC%[0m
+echo  %ESC%[1;31m╚══════════════════════════════════════════════════════════════════════════════╝%ESC%[0m
+echo.
+echo   %ESC%[1;31mВсе модели в checkpoints\ будут удалены!%ESC%[0m
+echo   %ESC%[2mПри следующем запуске они скачаются заново.%ESC%[0m
+echo.
+echo   %ESC%[1;31mДля подтверждения введите: DELETE%ESC%[0m
+set "DEL_CONFIRM="
+set /p "DEL_CONFIRM=%ESC%[33mВвод: %ESC%[0m"
+if /I "%DEL_CONFIRM%"=="DELETE" (
+    if exist "%CHECKPOINTS_DIR%" (
+        rmdir /s /q "%CHECKPOINTS_DIR%"
+        echo   %ESC%[1;32m  +   Модели удалены.%ESC%[0m
+    ) else (
+        echo   %ESC%[1;33m  .   Каталог не существует.%ESC%[0m
+    )
+) else (
+    echo   %ESC%[1;33mОтменено.%ESC%[0m
+)
+pause
 goto menu
 
 :exit

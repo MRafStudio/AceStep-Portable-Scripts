@@ -15,7 +15,6 @@ set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
 set "REPO_DIR=%ROOT_DIR%\repo"
 set "PYTHON_DIR=%ROOT_DIR%\python-3.12.10"
-set "MODELS_DIR=%ROOT_DIR%\models"
 set "DATA_DIR=%ROOT_DIR%\data"
 
 REM ============================================================================
@@ -95,10 +94,11 @@ if not exist "%CONFIG_FILE%" (
         echo ; ============================================================
         echo.
         echo ; --- Python ---
-        echo PYTHON_VERSION=3.11.9
+        echo PYTHON_VERSION=3.12.10
         echo.
         echo ; --- Модель ---
         echo ; Доступные: base, sft, turbo, xl-base, xl-sft, xl-turbo
+        echo ; Примечание: base устарел, используйте turbo или sft
         echo CURRENT_MODEL=turbo
         echo.
         echo ; --- Запуск ---
@@ -130,6 +130,42 @@ set "CURRENT_MODEL=%CURRENT_MODEL: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
+REM ============================================================================
+REM   Валидация и авто-фикс модели
+REM ============================================================================
+set "VALID_MODEL=0"
+if /I "%CURRENT_MODEL%"=="base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="turbo" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
+
+if "!VALID_MODEL!"=="0" (
+    echo   %ESC%[1;33m⚠  Неверное значение CURRENT_MODEL=%CURRENT_MODEL%, исправляем на turbo%ESC%[0m
+    set "CURRENT_MODEL=turbo"
+    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'CURRENT_MODEL=.*', 'CURRENT_MODEL=turbo' | Set-Content '%CONFIG_FILE%'"
+    timeout /t 1 /nobreak >nul
+)
+
+REM Авто-замена устаревшего base на turbo
+if /I "%CURRENT_MODEL%"=="base" (
+    echo   %ESC%[1;33m⚠  Модель 'base' устарела, переключаем на 'turbo'%ESC%[0m
+    set "CURRENT_MODEL=turbo"
+    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'CURRENT_MODEL=.*', 'CURRENT_MODEL=turbo' | Set-Content '%CONFIG_FILE%'"
+    timeout /t 1 /nobreak >nul
+)
+
+REM ============================================================================
+REM   Маппинг: короткое имя → реальное имя папки
+REM ============================================================================
+if "%CURRENT_MODEL%"=="base"     set "REAL_MODEL=acestep-v15-base"
+if "%CURRENT_MODEL%"=="sft"      set "REAL_MODEL=acestep-v15-sft"
+if "%CURRENT_MODEL%"=="turbo"    set "REAL_MODEL=acestep-v15-turbo"
+if "%CURRENT_MODEL%"=="xl-base"  set "REAL_MODEL=acestep-v15-xl-base"
+if "%CURRENT_MODEL%"=="xl-sft"   set "REAL_MODEL=acestep-v15-xl-sft"
+if "%CURRENT_MODEL%"=="xl-turbo" set "REAL_MODEL=acestep-v15-xl-turbo"
+
 :menu
 REM Перечитываем Config.ini (мог измениться в других скриптах)
 if exist "%CONFIG_FILE%" (
@@ -141,6 +177,26 @@ if exist "%CONFIG_FILE%" (
 set "CURRENT_MODEL=%CURRENT_MODEL: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
+
+REM Повторяем валидацию после перечитывания
+set "VALID_MODEL=0"
+if /I "%CURRENT_MODEL%"=="base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="turbo" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
+
+if "!VALID_MODEL!"=="0" set "CURRENT_MODEL=turbo"
+if /I "%CURRENT_MODEL%"=="base" set "CURRENT_MODEL=turbo"
+
+REM Обновляем маппинг
+if "%CURRENT_MODEL%"=="base"     set "REAL_MODEL=acestep-v15-base"
+if "%CURRENT_MODEL%"=="sft"      set "REAL_MODEL=acestep-v15-sft"
+if "%CURRENT_MODEL%"=="turbo"    set "REAL_MODEL=acestep-v15-turbo"
+if "%CURRENT_MODEL%"=="xl-base"  set "REAL_MODEL=acestep-v15-xl-base"
+if "%CURRENT_MODEL%"=="xl-sft"   set "REAL_MODEL=acestep-v15-xl-sft"
+if "%CURRENT_MODEL%"=="xl-turbo" set "REAL_MODEL=acestep-v15-xl-turbo"
 
 cls
 echo.
@@ -198,7 +254,7 @@ if exist "%REPO_DIR%\.venv\Lib\site-packages\torch" (
 REM Модель — проверяем только статус, не требуем для запуска
 set "MODEL_STATUS=%ESC%[1;33m%CURRENT_MODEL%%ESC%[0m"
 if exist "%REPO_DIR%\checkpoints" (
-    dir /b "%REPO_DIR%\checkpoints\acestep-v15-*" >nul 2>nul
+    dir /b "%REPO_DIR%\checkpoints\%REAL_MODEL%" >nul 2>nul
     if !errorlevel! equ 0 (
         echo     %ESC%[1;32m+  %ESC%[0m Модель: %MODEL_STATUS% %ESC%[2m^(загружена^)%ESC%[0m
     ) else (
@@ -213,7 +269,7 @@ set /a "INSTALLED_COUNT=!PYTHON_INSTALLED!+!REPO_INSTALLED!+!DEPS_INSTALLED!"
 
 echo.
 echo   %ESC%[1;33mТекущие настройки:%ESC%[0m
-echo     Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m
+echo     Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%^)%ESC%[0m
 echo     Запуск: %ESC%[1;33m%LAUNCH_METHOD%%ESC%[0m
 echo     Авто-браузер: %ESC%[1;33m%AUTO_OPEN_BROWSER%%ESC%[0m
 echo.
