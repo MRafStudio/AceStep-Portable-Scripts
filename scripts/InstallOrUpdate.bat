@@ -11,7 +11,6 @@ set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
 set "PYTHON_DIR=%ROOT_DIR%\python-3.12.10"
 set "REPO_DIR=%ROOT_DIR%\repo"
-set "MODELS_DIR=%ROOT_DIR%\models"
 
 REM ============================================================================
 REM   Изоляция данных
@@ -119,27 +118,6 @@ if exist "%REPO_DIR%\.venv\Lib\site-packages\torch" (
     set "DEPS_INSTALLED=0"
 )
 
-REM Модели
-set "MODEL_STATUS=Скачать"
-set "MODEL_COLOR=%ESC%[1;33m"
-set "MODEL_INSTALLED=0"
-if exist "%MODELS_DIR%" (
-    dir /s /b "%MODELS_DIR%\*.safetensors" >nul 2>nul
-    if not errorlevel 1 set "MODEL_INSTALLED=1"
-    if %MODEL_INSTALLED% equ 0 (
-        dir /s /b "%MODELS_DIR%\*.bin" >nul 2>nul
-        if not errorlevel 1 set "MODEL_INSTALLED=1"
-    )
-    if %MODEL_INSTALLED% equ 0 (
-        dir /s /b "%MODELS_DIR%\config.json" >nul 2>nul
-        if not errorlevel 1 set "MODEL_INSTALLED=1"
-    )
-    if %MODEL_INSTALLED% equ 1 (
-        set "MODEL_STATUS=Добавить"
-        set "MODEL_COLOR=%ESC%[1;32m"
-    )
-)
-
 set /a "INSTALLED_COUNT=!PYTHON_INSTALLED!+!REPO_INSTALLED!+!DEPS_INSTALLED!"
 
 REM ============================================================================
@@ -167,14 +145,12 @@ if !INSTALLED_COUNT!==0 (
     if !PYTHON_INSTALLED!==1 echo     %ESC%[1;32m+%ESC%[0m Python
     if !REPO_INSTALLED!==1 echo     %ESC%[1;32m+%ESC%[0m Репозиторий
     if !DEPS_INSTALLED!==1 echo     %ESC%[1;32m+%ESC%[0m PyTorch + зависимости
-    if !MODEL_INSTALLED!==1 echo     %ESC%[1;32m+%ESC%[0m Модели ^(частично^)
     echo.
     echo   %ESC%[1;33mВыберите действие:%ESC%[0m
     echo.
     echo   %ESC%[1;37m[1]%ESC%[0m !PYTHON_COLOR!!PYTHON_STATUS! Python%ESC%[0m
     echo   %ESC%[1;37m[2]%ESC%[0m !REPO_COLOR!!REPO_STATUS! Репозиторий ACE-Step-1.5%ESC%[0m
     echo   %ESC%[1;37m[3]%ESC%[0m !DEPS_COLOR!!DEPS_STATUS! PyTorch + зависимости%ESC%[0m
-    echo   %ESC%[1;37m[4]%ESC%[0m !MODEL_COLOR!!MODEL_STATUS! Выбор модели%ESC%[0m
     echo.
     echo   %ESC%[1;37m[8]%ESC%[0m %ESC%[1mОбновить все компоненты%ESC%[0m
     echo.
@@ -188,7 +164,6 @@ if !INSTALLED_COUNT!==0 (
     if "!choice!"=="1" goto install_python
     if "!choice!"=="2" goto install_repo
     if "!choice!"=="3" goto install_deps
-    if "!choice!"=="4" goto install_models
     if "!choice!"=="8" goto install_all
     if "!choice!"=="0" goto exit
     goto menu
@@ -232,14 +207,6 @@ echo.
 echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mЗапуск !DEPS_STATUS! PyTorch + зависимостей...%ESC%[0m
 echo.
 call "%SCRIPTS_DIR%\InstallOrUpdate-Dependencies.bat" 0
-goto menu
-
-:install_models
-cls
-echo.
-echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mЗапуск !MODEL_STATUS! Моделей...%ESC%[0m
-echo.
-call "%SCRIPTS_DIR%\ChoiceModels.bat" 0
 goto menu
 
 :exit
