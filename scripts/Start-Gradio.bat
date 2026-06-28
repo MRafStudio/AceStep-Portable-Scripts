@@ -42,18 +42,21 @@ REM   Чтение Config.ini
 REM ============================================================================
 set "CURRENT_MODEL=turbo"
 set "LANGUAGE=ru"
+set "LM_MODEL=acestep-5Hz-lm-1.7B"
 set "AUTO_OPEN_BROWSER=1"
 set "LAUNCH_METHOD=gradio"
 
 if exist "%CONFIG_FILE%" (
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"CURRENT_MODEL=" "%CONFIG_FILE%"') do set "CURRENT_MODEL=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LM_MODEL=" "%CONFIG_FILE%"') do set "LM_MODEL=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"AUTO_OPEN_BROWSER=" "%CONFIG_FILE%"') do set "AUTO_OPEN_BROWSER=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LAUNCH_METHOD=" "%CONFIG_FILE%"') do set "LAUNCH_METHOD=%%b"
 )
 
 set "CURRENT_MODEL=%CURRENT_MODEL: =%"
 set "LANGUAGE=%LANGUAGE: =%"
+set "LM_MODEL=%LM_MODEL: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
@@ -112,7 +115,7 @@ set "ENV_FILE=%REPO_DIR%\.env"
     echo.
     echo # --- Модели ---
     echo ACESTEP_CONFIG_PATH=%REAL_MODEL%
-    echo ACESTEP_LM_MODEL_PATH=acestep-5Hz-lm-1.7B
+    echo ACESTEP_LM_MODEL_PATH=%LM_MODEL%
     echo.
     echo # --- Устройство ---
     echo ACESTEP_DEVICE=auto
@@ -144,7 +147,8 @@ echo  %ESC%[1;36m##%ESC%[0m                %ESC%[1;37mAceStep-1.5%ESC%[0m   — 
 echo  %ESC%[1;36m##                                                                            ##%ESC%[0m
 echo  %ESC%[1;36m################################################################################%ESC%[0m
 echo.
-echo   %ESC%[1;33mМодель:%ESC%[0m %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%^)%ESC%[0m
+echo   %ESC%[1;33mМодель DiT:%ESC%[0m %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%^)%ESC%[0m
+echo   %ESC%[1;33mLM модель:%ESC%[0m %ESC%[1;33m%LM_MODEL%%ESC%[0m
 echo   %ESC%[1;33mURL:%ESC%[0m %ESC%[1;37mhttp://127.0.0.1:7860%ESC%[0m
 echo   %ESC%[1;33mМодели:%ESC%[0m %ESC%[2mавто-загрузка в repo\checkpoints\%ESC%[0m
 echo.
@@ -166,7 +170,7 @@ cd /d "%REPO_DIR%"
     --server-name 127.0.0.1 ^
     --language %LANGUAGE% ^
     --config_path %REAL_MODEL% ^
-    --lm_model_path acestep-5Hz-lm-1.7B ^
+    --lm_model_path %LM_MODEL% ^
     --init_service true
 
 echo.

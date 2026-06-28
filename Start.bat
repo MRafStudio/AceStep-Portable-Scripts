@@ -93,14 +93,19 @@ if not exist "%CONFIG_FILE%" (
         echo ;   AceStep-1.5 Portable — Конфигурация
         echo ; ============================================================
         echo.
-		echo ; --- Язык интерфейса ---
+        echo ; --- Язык интерфейса ---
         echo ; Доступные: en, zh, ja, he, pt, ru
         echo LANGUAGE=ru
-		echo.
-        echo ; --- Модель ---
-        echo ; Доступные: base, sft, turbo, xl-base, xl-sft, xl-turbo
+        echo.
+        echo ; --- Модель DiT ---
+        echo ; Доступные: turbo, sft, xl-base, xl-sft, xl-turbo
         echo ; Примечание: base устарел, используйте turbo или sft
         echo CURRENT_MODEL=turbo
+        echo.
+        echo ; --- LM модель ---
+        echo ; Доступные: acestep-5Hz-lm-0.6B, acestep-5Hz-lm-1.7B, acestep-5Hz-lm-4B
+        echo ; 0.6B = быстро, мало VRAM | 1.7B = баланс | 4B = макс качество
+        echo LM_MODEL=acestep-5Hz-lm-1.7B
         echo.
         echo ; --- Запуск ---
         echo AUTO_OPEN_BROWSER=1
@@ -119,18 +124,21 @@ REM   Чтение Config.ini
 REM ============================================================================
 set "CURRENT_MODEL=turbo"
 set "LANGUAGE=ru"
+set "LM_MODEL=acestep-5Hz-lm-1.7B"
 set "AUTO_OPEN_BROWSER=1"
 set "LAUNCH_METHOD=gradio"
 
 if exist "%CONFIG_FILE%" (
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"CURRENT_MODEL=" "%CONFIG_FILE%"') do set "CURRENT_MODEL=%%b"
-	for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LM_MODEL=" "%CONFIG_FILE%"') do set "LM_MODEL=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"AUTO_OPEN_BROWSER=" "%CONFIG_FILE%"') do set "AUTO_OPEN_BROWSER=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LAUNCH_METHOD=" "%CONFIG_FILE%"') do set "LAUNCH_METHOD=%%b"
 )
 
 set "CURRENT_MODEL=%CURRENT_MODEL: =%"
 set "LANGUAGE=%LANGUAGE: =%"
+set "LM_MODEL=%LM_MODEL: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
@@ -174,13 +182,15 @@ if "%CURRENT_MODEL%"=="xl-turbo" set "REAL_MODEL=acestep-v15-xl-turbo"
 REM Перечитываем Config.ini (мог измениться в других скриптах)
 if exist "%CONFIG_FILE%" (
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"CURRENT_MODEL=" "%CONFIG_FILE%"') do set "CURRENT_MODEL=%%b"
-	for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LM_MODEL=" "%CONFIG_FILE%"') do set "LM_MODEL=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"AUTO_OPEN_BROWSER=" "%CONFIG_FILE%"') do set "AUTO_OPEN_BROWSER=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LAUNCH_METHOD=" "%CONFIG_FILE%"') do set "LAUNCH_METHOD=%%b"
 )
 
 set "CURRENT_MODEL=%CURRENT_MODEL: =%"
 set "LANGUAGE=%LANGUAGE: =%"
+set "LM_MODEL=%LM_MODEL: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
@@ -262,12 +272,12 @@ set "MODEL_STATUS=%ESC%[1;33m%CURRENT_MODEL%%ESC%[0m"
 if exist "%REPO_DIR%\checkpoints" (
     dir /b "%REPO_DIR%\checkpoints\%REAL_MODEL%" >nul 2>nul
     if !errorlevel! equ 0 (
-        echo     %ESC%[1;32m+  %ESC%[0m Модель: %MODEL_STATUS% %ESC%[2m^(загружена^)%ESC%[0m
+        echo     %ESC%[1;32m+  %ESC%[0m Модель DiT: %MODEL_STATUS% %ESC%[2m^(загружена^)%ESC%[0m
     ) else (
-        echo     %ESC%[1;33m.  %ESC%[0m Модель: %MODEL_STATUS% %ESC%[2m^(авто-загрузка при запуске^)%ESC%[0m
+        echo     %ESC%[1;33m.  %ESC%[0m Модель DiT: %MODEL_STATUS% %ESC%[2m^(авто-загрузка при запуске^)%ESC%[0m
     )
 ) else (
-    echo     %ESC%[1;33m.  %ESC%[0m Модель: %MODEL_STATUS% %ESC%[2m^(авто-загрузка при запуске^)%ESC%[0m
+    echo     %ESC%[1;33m.  %ESC%[0m Модель DiT: %MODEL_STATUS% %ESC%[2m^(авто-загрузка при запуске^)%ESC%[0m
 )
 
 REM Подсчёт — только 3 компонента (без модели)
@@ -275,7 +285,8 @@ set /a "INSTALLED_COUNT=!PYTHON_INSTALLED!+!REPO_INSTALLED!+!DEPS_INSTALLED!"
 
 echo.
 echo   %ESC%[1;33mТекущие настройки:%ESC%[0m
-echo     Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%^)%ESC%[0m
+echo     Модель DiT: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%REAL_MODEL%^)%ESC%[0m
+echo     LM модель: %ESC%[1;33m%LM_MODEL%%ESC%[0m
 echo     Язык: %ESC%[1;33m%LANGUAGE%%ESC%[0m
 echo     Запуск: %ESC%[1;33m%LAUNCH_METHOD%%ESC%[0m
 echo     Авто-браузер: %ESC%[1;33m%AUTO_OPEN_BROWSER%%ESC%[0m

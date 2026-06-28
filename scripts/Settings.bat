@@ -29,21 +29,24 @@ REM ============================================================================
 REM   Чтение текущих настроек
 REM ============================================================================
 set "CURRENT_MODEL=turbo"
+set "LANGUAGE=ru"
+set "LM_MODEL=acestep-5Hz-lm-1.7B"
 set "AUTO_OPEN_BROWSER=1"
 set "LAUNCH_METHOD=gradio"
-set "LANGUAGE=ru"
 
 if exist "%CONFIG_FILE%" (
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"CURRENT_MODEL=" "%CONFIG_FILE%"') do set "CURRENT_MODEL=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
+    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LM_MODEL=" "%CONFIG_FILE%"') do set "LM_MODEL=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"AUTO_OPEN_BROWSER=" "%CONFIG_FILE%"') do set "AUTO_OPEN_BROWSER=%%b"
     for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LAUNCH_METHOD=" "%CONFIG_FILE%"') do set "LAUNCH_METHOD=%%b"
-    for /f "tokens=1,2 delims==" %%a in ('findstr /B /C:"LANGUAGE=" "%CONFIG_FILE%"') do set "LANGUAGE=%%b"
 )
 
 set "CURRENT_MODEL=%CURRENT_MODEL: =%"
+set "LANGUAGE=%LANGUAGE: =%"
+set "LM_MODEL=%LM_MODEL: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
-set "LANGUAGE=%LANGUAGE: =%"
 
 REM Валидация модели
 set "VALID_MODEL=0"
@@ -57,7 +60,7 @@ if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
 if "!VALID_MODEL!"=="0" set "CURRENT_MODEL=turbo"
 if /I "%CURRENT_MODEL%"=="base" set "CURRENT_MODEL=turbo"
 
-REM Маппинг для отображения
+REM Маппинг для отображения DiT
 if "%CURRENT_MODEL%"=="turbo"    set "DISP_MODEL=acestep-v15-turbo"
 if "%CURRENT_MODEL%"=="sft"      set "DISP_MODEL=acestep-v15-sft"
 if "%CURRENT_MODEL%"=="xl-base"  set "DISP_MODEL=acestep-v15-xl-base"
@@ -73,17 +76,24 @@ if "%LANGUAGE%"=="pt" set "DISP_LANG=Português"
 if "%LANGUAGE%"=="ru" set "DISP_LANG=Русский"
 if not defined DISP_LANG set "DISP_LANG=%LANGUAGE%"
 
+REM Маппинг LM для отображения
+if "%LM_MODEL%"=="acestep-5Hz-lm-0.6B" set "DISP_LM=0.6B (быстро)"
+if "%LM_MODEL%"=="acestep-5Hz-lm-1.7B" set "DISP_LM=1.7B (баланс)"
+if "%LM_MODEL%"=="acestep-5Hz-lm-4B"   set "DISP_LM=4B (качество)"
+if not defined DISP_LM set "DISP_LM=%LM_MODEL%"
+
 echo   %ESC%[1;33mТекущие настройки:%ESC%[0m
 echo.
-echo   %ESC%[1;37m[1]%ESC%[0m Модель: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%DISP_MODEL%^)%ESC%[0m
+echo   %ESC%[1;37m[1]%ESC%[0m Модель DiT: %ESC%[1;33m%CURRENT_MODEL%%ESC%[0m %ESC%[2m^(%DISP_MODEL%^)%ESC%[0m
 echo   %ESC%[1;37m[2]%ESC%[0m Автозапуск браузера: %ESC%[1;33m%AUTO_OPEN_BROWSER%%ESC%[0m
 echo   %ESC%[1;37m[3]%ESC%[0m Метод запуска: %ESC%[1;33m%LAUNCH_METHOD%%ESC%[0m
 echo   %ESC%[1;37m[4]%ESC%[0m Язык интерфейса: %ESC%[1;33m%DISP_LANG%%ESC%[0m
+echo   %ESC%[1;37m[5]%ESC%[0m LM модель: %ESC%[1;33m%DISP_LM%%ESC%[0m
 echo.
 echo   %ESC%[1;37m[0]%ESC%[0m %ESC%[1mСохранить и выйти%ESC%[0m
 echo.
 set "choice="
-set /p "choice=%ESC%[33mВыберите настройку (1-4, 0 для выхода): %ESC%[0m"
+set /p "choice=%ESC%[33mВыберите настройку (1-5, 0 для выхода): %ESC%[0m"
 
 set "choice=%choice: =%"
 if "%choice%"=="" goto menu
@@ -92,6 +102,7 @@ if "%choice%"=="1" goto set_model
 if "%choice%"=="2" goto set_browser
 if "%choice%"=="3" goto set_method
 if "%choice%"=="4" goto set_language
+if "%choice%"=="5" goto set_lm_model
 goto menu
 
 :set_model
@@ -203,6 +214,39 @@ if defined NEW_LANG (
     powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'LANGUAGE=.*', 'LANGUAGE=%NEW_LANG%' | Set-Content '%CONFIG_FILE%'"
     set "LANGUAGE=%NEW_LANG%"
     echo   %ESC%[1;32m  ✔   Язык изменён на %NEW_LANG%%ESC%[0m
+    timeout /t 2 /nobreak >nul
+)
+goto menu
+
+:set_lm_model
+cls
+echo.
+echo   %ESC%[1;33mВыбор LM модели:%ESC%[0m
+echo.
+echo   %ESC%[1;34m── Мало VRAM (<8GB) ────────────────────────────────────────────%ESC%[0m
+echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1m0.6B%ESC%[0m   %ESC%[2m~1.2GB VRAM  |  Быстро  |  Базовое качество%ESC%[0m
+echo.
+echo   %ESC%[1;34m── Баланс ──────────────────────────────────────────────────────%ESC%[0m
+echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1m1.7B%ESC%[0m   %ESC%[2m~3.6GB VRAM  |  Стандарт  |  Хорошее качество%ESC%[0m
+echo.
+echo   %ESC%[1;34m── Максимальное качество ─────────────────────────────────────%ESC%[0m
+echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1m4B%ESC%[0m     %ESC%[2m~8GB VRAM   |  Медленнее  |  Отличное качество%ESC%[0m
+echo.
+echo   %ESC%[1;33mТвоя видеокарта:%ESC%[0m %ESC%[1;32mRTX 5090 32GB%ESC%[0m
+echo   %ESC%[1;32m  Рекомендуется: 4B для максимального качества!%ESC%[0m
+echo.
+set "lmchoice="
+set /p "lmchoice=%ESC%[33mВыберите LM модель (1-3): %ESC%[0m"
+
+set "lmchoice=%lmchoice: =%"
+if "%lmchoice%"=="1" set "NEW_LM=acestep-5Hz-lm-0.6B"
+if "%lmchoice%"=="2" set "NEW_LM=acestep-5Hz-lm-1.7B"
+if "%lmchoice%"=="3" set "NEW_LM=acestep-5Hz-lm-4B"
+
+if defined NEW_LM (
+    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'LM_MODEL=.*', 'LM_MODEL=%NEW_LM%' | Set-Content '%CONFIG_FILE%'"
+    set "LM_MODEL=%NEW_LM%"
+    echo   %ESC%[1;32m  ✔   LM модель изменена на %NEW_LM%%ESC%[0m
     timeout /t 2 /nobreak >nul
 )
 goto menu
