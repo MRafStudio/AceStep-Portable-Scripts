@@ -1,7 +1,6 @@
 REM scripts\Settings.bat
 @echo off
 chcp 65001 >nul
-setlocal enabledelayedexpansion
 
 title AceStep-1.5 Portable — Настройки
 pushd %~dp0..
@@ -14,6 +13,28 @@ REM ============================================================================
 for %%F in ("%~dp0..") do set "ROOT_DIR=%%~fF"
 set "SCRIPTS_DIR=%ROOT_DIR%\scripts"
 set "CONFIG_FILE=%SCRIPTS_DIR%\Config.ini"
+
+goto :menu
+
+:smart_pause
+echo   %ESC%[2m       ^(нажмите любую клавишу для продолжения^)%ESC%[0m
+timeout /t 3 /nobreak >nul
+goto :eof
+
+REM ============================================================================
+REM   Валидация модели через метку (обход enabledelayedexpansion)
+REM ============================================================================
+:validate_model
+set "VALID_MODEL=0"
+if /I "%CURRENT_MODEL%"=="base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="turbo" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-base" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-sft" set "VALID_MODEL=1"
+if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
+if "%VALID_MODEL%"=="0" set "CURRENT_MODEL=turbo"
+if /I "%CURRENT_MODEL%"=="base" set "CURRENT_MODEL=turbo"
+goto :eof
 
 :menu
 cls
@@ -48,17 +69,7 @@ set "LM_MODEL=%LM_MODEL: =%"
 set "AUTO_OPEN_BROWSER=%AUTO_OPEN_BROWSER: =%"
 set "LAUNCH_METHOD=%LAUNCH_METHOD: =%"
 
-REM Валидация модели
-set "VALID_MODEL=0"
-if /I "%CURRENT_MODEL%"=="base" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="sft" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="turbo" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="xl-base" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="xl-sft" set "VALID_MODEL=1"
-if /I "%CURRENT_MODEL%"=="xl-turbo" set "VALID_MODEL=1"
-
-if "!VALID_MODEL!"=="0" set "CURRENT_MODEL=turbo"
-if /I "%CURRENT_MODEL%"=="base" set "CURRENT_MODEL=turbo"
+call :validate_model
 
 REM Маппинг для отображения DiT
 if "%CURRENT_MODEL%"=="turbo"    set "DISP_MODEL=acestep-v15-turbo"
@@ -106,21 +117,19 @@ if "%choice%"=="5" goto set_lm_model
 goto menu
 
 :set_model
+set "NEW_MODEL="
 cls
 echo.
 echo   %ESC%[1;33mВыбор модели DiT:%ESC%[0m
 echo.
 echo   %ESC%[1;34m── Стандарт (2B, ~5GB) ─────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mturbo%ESC%[0m  %ESC%[2m~5GB  |  VRAM: 6GB+  |  Шаги: 8   |  Быстрая%ESC%[0m
-echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1msft%ESC%[0m    %ESC%[2m~5GB  |  VRAM: 6GB+  |  Шаги: 50  |  Стандарт%ESC%[0m
+echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1mturbo%ESC%[0m  %ESC%[2m~5GB  ^|  VRAM: 6GB+  ^|  Шаги: 8   ^|  Быстрая%ESC%[0m
+echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1msft%ESC%[0m    %ESC%[2m~5GB  ^|  VRAM: 6GB+  ^|  Шаги: 50  ^|  Стандарт%ESC%[0m
 echo.
 echo   %ESC%[1;34m── XL (4B, ~19GB) ───────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mxl-base%ESC%[0m   %ESC%[2m~19GB |  VRAM: 12GB+ |  Шаги: 50  |  Все задачи%ESC%[0m
-echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mxl-sft%ESC%[0m    %ESC%[2m~19GB |  VRAM: 12GB+ |  Шаги: 50  |  Стандарт%ESC%[0m
-echo   %ESC%[1;37m[5]%ESC%[0m %ESC%[1mxl-turbo%ESC%[0m  %ESC%[2m~19GB |  VRAM: 12GB+ |  Шаги: 8   |  Быстрая%ESC%[0m
-echo.
-echo   %ESC%[1;33mТвоя видеокарта:%ESC%[0m %ESC%[1;32mRTX 5090 32GB%ESC%[0m
-echo   %ESC%[1;32m  Рекомендуется: xl-base или xl-sft для максимального качества%ESC%[0m
+echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1mxl-base%ESC%[0m   %ESC%[2m~19GB ^|  VRAM: 12GB+ ^|  Шаги: 50  ^|  Все задачи%ESC%[0m
+echo   %ESC%[1;37m[4]%ESC%[0m %ESC%[1mxl-sft%ESC%[0m    %ESC%[2m~19GB ^|  VRAM: 12GB+ ^|  Шаги: 50  ^|  Стандарт%ESC%[0m
+echo   %ESC%[1;37m[5]%ESC%[0m %ESC%[1mxl-turbo%ESC%[0m  %ESC%[2m~19GB ^|  VRAM: 12GB+ ^|  Шаги: 8   ^|  Быстрая%ESC%[0m
 echo.
 set "mchoice="
 set /p "mchoice=%ESC%[33mВыберите модель (1-5): %ESC%[0m"
@@ -133,13 +142,15 @@ if "%mchoice%"=="4" set "NEW_MODEL=xl-sft"
 if "%mchoice%"=="5" set "NEW_MODEL=xl-turbo"
 
 if defined NEW_MODEL (
-    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'CURRENT_MODEL=.*', 'CURRENT_MODEL=%NEW_MODEL%' | Set-Content '%CONFIG_FILE%'"
+    call "%SCRIPTS_DIR%\CreateConfig.bat" "%LANGUAGE%" "%NEW_MODEL%" "%LM_MODEL%" "%AUTO_OPEN_BROWSER%" "%LAUNCH_METHOD%"
+    echo.
     echo   %ESC%[1;32m  ✔   Модель изменена на %NEW_MODEL%%ESC%[0m
-    timeout /t 2 /nobreak >nul
+    call :smart_pause
 )
 goto menu
 
 :set_browser
+set "NEW_BROWSER="
 cls
 echo.
 echo   %ESC%[1;33mАвтозапуск браузера:%ESC%[0m
@@ -151,19 +162,19 @@ set "bchoice="
 set /p "bchoice=%ESC%[33mВыберите (1-2): %ESC%[0m"
 
 set "bchoice=%bchoice: =%"
-if "%bchoice%"=="1" (
-    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'AUTO_OPEN_BROWSER=.*', 'AUTO_OPEN_BROWSER=1' | Set-Content '%CONFIG_FILE%'"
-    echo   %ESC%[1;32m  ✔   Автозапуск включён%ESC%[0m
-    timeout /t 2 /nobreak >nul
-)
-if "%bchoice%"=="2" (
-    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'AUTO_OPEN_BROWSER=.*', 'AUTO_OPEN_BROWSER=0' | Set-Content '%CONFIG_FILE%'"
-    echo   %ESC%[1;32m  ✔   Автозапуск выключен%ESC%[0m
-    timeout /t 2 /nobreak >nul
+if "%bchoice%"=="1" set "NEW_BROWSER=1"
+if "%bchoice%"=="2" set "NEW_BROWSER=0"
+
+if defined NEW_BROWSER (
+    call "%SCRIPTS_DIR%\CreateConfig.bat" "%LANGUAGE%" "%CURRENT_MODEL%" "%LM_MODEL%" "%NEW_BROWSER%" "%LAUNCH_METHOD%"
+    echo.
+    echo   %ESC%[1;32m  ✔   Автозапуск изменён на %NEW_BROWSER%%ESC%[0m
+    call :smart_pause
 )
 goto menu
 
 :set_method
+set "NEW_METHOD="
 cls
 echo.
 echo   %ESC%[1;33mМетод запуска:%ESC%[0m
@@ -175,19 +186,19 @@ set "mchoice="
 set /p "mchoice=%ESC%[33mВыберите (1-2): %ESC%[0m"
 
 set "mchoice=%mchoice: =%"
-if "%mchoice%"=="1" (
-    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'LAUNCH_METHOD=.*', 'LAUNCH_METHOD=gradio' | Set-Content '%CONFIG_FILE%'"
-    echo   %ESC%[1;32m  ✔   Метод изменён на gradio%ESC%[0m
-    timeout /t 2 /nobreak >nul
-)
-if "%mchoice%"=="2" (
-    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'LAUNCH_METHOD=.*', 'LAUNCH_METHOD=comfyui' | Set-Content '%CONFIG_FILE%'"
-    echo   %ESC%[1;32m  ✔   Метод изменён на comfyui%ESC%[0m
-    timeout /t 2 /nobreak >nul
+if "%mchoice%"=="1" set "NEW_METHOD=gradio"
+if "%mchoice%"=="2" set "NEW_METHOD=comfyui"
+
+if defined NEW_METHOD (
+    call "%SCRIPTS_DIR%\CreateConfig.bat" "%LANGUAGE%" "%CURRENT_MODEL%" "%LM_MODEL%" "%AUTO_OPEN_BROWSER%" "%NEW_METHOD%"
+    echo.
+    echo   %ESC%[1;32m  ✔   Метод изменён на %NEW_METHOD%%ESC%[0m
+    call :smart_pause
 )
 goto menu
 
 :set_language
+set "NEW_LANG="
 cls
 echo.
 echo   %ESC%[1;33mВыбор языка интерфейса:%ESC%[0m
@@ -211,29 +222,27 @@ if "%lchoice%"=="5" set "NEW_LANG=he"
 if "%lchoice%"=="6" set "NEW_LANG=pt"
 
 if defined NEW_LANG (
-    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'LANGUAGE=.*', 'LANGUAGE=%NEW_LANG%' | Set-Content '%CONFIG_FILE%'"
-    set "LANGUAGE=%NEW_LANG%"
+    call "%SCRIPTS_DIR%\CreateConfig.bat" "%NEW_LANG%" "%CURRENT_MODEL%" "%LM_MODEL%" "%AUTO_OPEN_BROWSER%" "%LAUNCH_METHOD%"
+    echo.
     echo   %ESC%[1;32m  ✔   Язык изменён на %NEW_LANG%%ESC%[0m
-    timeout /t 2 /nobreak >nul
+    call :smart_pause
 )
 goto menu
 
 :set_lm_model
+set "NEW_LM="
 cls
 echo.
 echo   %ESC%[1;33mВыбор LM модели:%ESC%[0m
 echo.
-echo   %ESC%[1;34m── Мало VRAM (<8GB) ────────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1m0.6B%ESC%[0m   %ESC%[2m~1.2GB VRAM  |  Быстро  |  Базовое качество%ESC%[0m
+echo   %ESC%[1;34m── Мало VRAM (8GB) ─────────────────────────────────────────%ESC%[0m
+echo   %ESC%[1;37m[1]%ESC%[0m %ESC%[1m0.6B%ESC%[0m   %ESC%[2m~1.2GB VRAM  ^|  Быстро  ^|  Базовое качество%ESC%[0m
 echo.
 echo   %ESC%[1;34m── Баланс ──────────────────────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1m1.7B%ESC%[0m   %ESC%[2m~3.6GB VRAM  |  Стандарт  |  Хорошее качество%ESC%[0m
+echo   %ESC%[1;37m[2]%ESC%[0m %ESC%[1m1.7B%ESC%[0m   %ESC%[2m~3.6GB VRAM  ^|  Стандарт  ^|  Хорошее качество%ESC%[0m
 echo.
 echo   %ESC%[1;34m── Максимальное качество ─────────────────────────────────────%ESC%[0m
-echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1m4B%ESC%[0m     %ESC%[2m~8GB VRAM   |  Медленнее  |  Отличное качество%ESC%[0m
-echo.
-echo   %ESC%[1;33mТвоя видеокарта:%ESC%[0m %ESC%[1;32mRTX 5090 32GB%ESC%[0m
-echo   %ESC%[1;32m  Рекомендуется: 4B для максимального качества!%ESC%[0m
+echo   %ESC%[1;37m[3]%ESC%[0m %ESC%[1m4B%ESC%[0m     %ESC%[2m~8GB VRAM   ^|  Медленнее  ^|  Отличное качество%ESC%[0m
 echo.
 set "lmchoice="
 set /p "lmchoice=%ESC%[33mВыберите LM модель (1-3): %ESC%[0m"
@@ -244,10 +253,10 @@ if "%lmchoice%"=="2" set "NEW_LM=acestep-5Hz-lm-1.7B"
 if "%lmchoice%"=="3" set "NEW_LM=acestep-5Hz-lm-4B"
 
 if defined NEW_LM (
-    powershell -Command "(Get-Content '%CONFIG_FILE%') -replace 'LM_MODEL=.*', 'LM_MODEL=%NEW_LM%' | Set-Content '%CONFIG_FILE%'"
-    set "LM_MODEL=%NEW_LM%"
+    call "%SCRIPTS_DIR%\CreateConfig.bat" "%LANGUAGE%" "%CURRENT_MODEL%" "%NEW_LM%" "%AUTO_OPEN_BROWSER%" "%LAUNCH_METHOD%"
+    echo.
     echo   %ESC%[1;32m  ✔   LM модель изменена на %NEW_LM%%ESC%[0m
-    timeout /t 2 /nobreak >nul
+    call :smart_pause
 )
 goto menu
 

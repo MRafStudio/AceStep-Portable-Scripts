@@ -84,10 +84,23 @@ if !GIT_FOUND! equ 0 (
 )
 
 REM ============================================================================
-REM   Авто-создание Config.ini если нет
+REM   Авто-создание / обновление Config.ini
 REM ============================================================================
+set "CONFIG_NEED_CREATE=0"
 if not exist "%CONFIG_FILE%" (
-    echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mСоздание Config.ini...%ESC%[0m
+    set "CONFIG_NEED_CREATE=1"
+) else (
+    REM Проверяем, есть ли LM_MODEL в существующем файле (устаревший Config.ini)
+    findstr /B /C:"LM_MODEL=" "%CONFIG_FILE%" >nul 2>nul
+    if !errorlevel! neq 0 set "CONFIG_NEED_CREATE=1"
+)
+
+if "!CONFIG_NEED_CREATE!"=="1" (
+    if exist "%CONFIG_FILE%" (
+        echo   %ESC%[1;33m⚠  Config.ini устарел. Обновление...%ESC%[0m
+    ) else (
+        echo   %ESC%[1;33m-%ESC%[0m %ESC%[1mСоздание Config.ini...%ESC%[0m
+    )
     (
         echo ; ============================================================
         echo ;   AceStep-1.5 Portable — Конфигурация
@@ -104,7 +117,7 @@ if not exist "%CONFIG_FILE%" (
         echo.
         echo ; --- LM модель ---
         echo ; Доступные: acestep-5Hz-lm-0.6B, acestep-5Hz-lm-1.7B, acestep-5Hz-lm-4B
-        echo ; 0.6B = быстро, мало VRAM | 1.7B = баланс | 4B = макс качество
+        echo ; 0.6B = быстро, мало VRAM ^| 1.7B = баланс ^| 4B = макс качество
         echo LM_MODEL=acestep-5Hz-lm-1.7B
         echo.
         echo ; --- Запуск ---
@@ -115,7 +128,7 @@ if not exist "%CONFIG_FILE%" (
         echo ; Для RTX 5090 ^(Blackwell^) — CUDA 12.8
         echo CUDA_VERSION=12.8
     ) > "%CONFIG_FILE%"
-    echo   %ESC%[1;32m  +   Config.ini создан.%ESC%[0m
+    echo   %ESC%[1;32m  +   Config.ini готов.%ESC%[0m
     echo.
 )
 
@@ -265,19 +278,6 @@ if exist "%REPO_DIR%\.venv\Lib\site-packages\torch" (
     set "DEPS_INSTALLED=1"
 ) else (
     echo     %ESC%[1;31m-  %ESC%[0m PyTorch + зависимости — не установлены
-)
-
-REM Модель — проверяем только статус, не требуем для запуска
-set "MODEL_STATUS=%ESC%[1;33m%CURRENT_MODEL%%ESC%[0m"
-if exist "%REPO_DIR%\checkpoints" (
-    dir /b "%REPO_DIR%\checkpoints\%REAL_MODEL%" >nul 2>nul
-    if !errorlevel! equ 0 (
-        echo     %ESC%[1;32m+  %ESC%[0m Модель DiT: %MODEL_STATUS% %ESC%[2m^(загружена^)%ESC%[0m
-    ) else (
-        echo     %ESC%[1;33m.  %ESC%[0m Модель DiT: %MODEL_STATUS% %ESC%[2m^(авто-загрузка при запуске^)%ESC%[0m
-    )
-) else (
-    echo     %ESC%[1;33m.  %ESC%[0m Модель DiT: %MODEL_STATUS% %ESC%[2m^(авто-загрузка при запуске^)%ESC%[0m
 )
 
 REM Подсчёт — только 3 компонента (без модели)
